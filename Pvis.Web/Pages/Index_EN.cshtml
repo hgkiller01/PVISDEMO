@@ -1,0 +1,196 @@
+﻿@page
+@using Microsoft.AspNetCore.Http
+@model Pvis.Web.Pages.Index_ENModel
+@{
+    ViewData["Title"] = "Solar Photovoltaic Panels Recycling";
+    Layout = null;
+}
+@{
+    var path = HttpContext.Request.Path;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Solar Photovoltaic Panels Recycling</title>
+    <meta charset="utf-8" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#e84">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="~/img/favicon.png">
+    @*<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/figuration@3.0.5/dist/css/figuration.min.css">*@
+    <link rel="stylesheet" href="~/css/figuration.min.css" />
+    @*<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">*@
+    <link href="~/lib/font-awesome/css/all.css" rel="stylesheet" />
+    <link href="~/lib/font-awesome/css/v4-shims.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/front.css" asp-append-version="true" />
+    <script src="~/NewJs/figuration.js"></script>
+    @*<script src="//cdn.jsdelivr.net/combine/npm/jquery@3.5.1,npm/figuration@3.0.5"></script>*@
+    <link href="~/slick/slick.min.css" rel="stylesheet" />
+    <link href="~/slick/slick-theme.min.css" rel="stylesheet" />
+    <script src="~/js/slick-carousel.js" asp-append-version="true"></script>
+    <!-- Google Analytics -->
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-151343133-1', 'epa.gov.tw');
+        ga('send', 'pageview');
+    </script>
+    <!-- End Google Analytics -->
+    <style>
+        * {
+            line-height: 1.5em;
+            letter-spacing: 0.14em;
+        }
+    </style>
+</head>
+<body>
+    <header role="banner">
+        <noscript>
+            <div class="h1">
+                This webpage needs to support JavaScript to run correctly. Please turn on JavaScript in your browser settings first.
+            </div>
+
+        </noscript>
+
+
+        <nav class="navbar navbar-expand-lg fixed-top" id="nav">
+            <div class="container">
+                <a href="#AC" class="sr-only sr-only-focusable">GoToMain</a>
+                <a href="#U" id="AU" name="U" accesskey="U" title="UpperBlock" class="sr-only sr-only-focusable">:::</a>
+                <h1 class="logo">
+                    <a href="~/Index_EN" class="navbar-brand me-0" title="Solar Photovoltaic Panels Recycling System">
+                        <img class="w-100 h-100" src="~/img/logoEN.png" alt="Solar Photovoltaic Panels Recycling System" asp-append-version="true" />
+                        <environment include="Development"><em>Development～</em></environment>
+                        <environment include="Staging"><em>Staging～</em></environment>
+                    </a>
+                </h1>
+                <button class="navbar-toggle collapsed border-primary" type="button" data-cfw="collapse" data-cfw-collapse-target="#navbar">
+                    <span>≡</span>
+                </button>
+                <div class="navbar-collapse collapse navbars" id="navbar">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" title="Chinese Web Site" href="~/">中</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div id="content">
+        <main role="main" aria-label="main section">
+            <a href="#C" id="AC" name="C" accesskey="C" title="MiddleBlock" class="sr-only sr-only-focusable">:::</a>
+
+            <div class="container-fluid p-0">
+                <img class="w-100 d-sm-down-none" alt="Solar Photovoltaic Panels Recycling" asp-append-version="true" src="~/img/bannerEN.jpg">
+                <img class="w-100 d-md-none" alt="Solar Photovoltaic Panels Recycling" asp-append-version="true" src="~/img/bannerEN-s.jpg">
+            </div>
+            <div class="container pt-2">
+                <p>
+                    The shortcut key (Accesskey) of this webpage is set as follows: <br />
+
+                    Alt+U: The functional blocks above, including home page, website navigation.<br />
+                    Alt+C: The central content area is the main content area of this page. <br />
+                    Alt+B: Lower functional block.
+                </p>
+                <h2>Solar Photovoltaic Panels Recycling Framework</h2>
+                <h3>Introduction</h3>
+                <p>
+                    Taiwan set up the first photovoltaic (PV) system (module) in 2000. The cumulative capacity in 2018 has reached 2.7GW since the initiation of the “Million Rooftop PVs Promotion Project” by the Bureau of Energy (BOE), Ministry of Economic Affairs in 2012. Handling of the de-commissioned panels will be an issue at the end of life of solar systems.
+                </p>
+                <p>
+                    With the average solar PV panel lifetime of 20 years and 0.5% of waste PV panels resulted from storm disasters, the annual PV waste panels are expected to reach 10,000 metric tons in 2023 and even up to 100,000 metric tons starting from 2035.
+                </p>
+                <h3>The composition of solar PV panels</h3>
+                <p>
+                    Currently, the PV market is dominated by silicon-based modules in Taiwan, which are mainly composed of 74.2% of glass, 10.3% of aluminum frame, and 4% of solar cells. The solar cells are laminated with glass, EVA, back sheets, and sealed by aluminum frame which are not considered to leach or release hazardous materials and cause environmental pollution. As a consequence, waste solar PV panels should be treated as general industrial waste for storage and disposal.
+                </p>
+                <h3>Impose on PV panels recycling fee</h3>
+                <p>
+                    On 1 February 2019, the BOE announced “The Feed-in Tariff (FIT) rates of renewable energy in 2019” which has included the recycling fee of NT$1000 per kW and installation recycling costs of NT$0.0656/ kWh according to the “The FIT rates of renewable energy in 2020” announced on 31 December 2019.
+                    Since 18 December 2019, the amended “Regulations for Installation of Renewable Energy Development” has stipulated that solar power developers who apply to install or replace PV modules have to pay the module recycling fee. In principle, it is collected by BOE at the end of each year for 10 years as a recycling fund. The fund will be used for PV recycling technology R&D, counselling firms to establish module treatment plants, and relevant administrative costs.
+
+                </p>
+                <h3>Waste panels Recycling System </h3>
+                <p>
+                    Recycling system for the end-of-life (EOL) solar PV modules is adopted by the project, which facilitates domestic PV modules producers and importers to establish a recycling organization or association responsible for the collection and treatment of EOL PV modules. Solar power developers have to register for an account on the EPA’s online PV recycling information system (PVIS) and provide the site information and label of PV modules before treatment.
+                </p>
+                <h3>Disposal Registration</h3>
+                <p>
+                    If the public or solar power developers request for disposal of EOL solar PV modules, it is necessary to fill in a form which contains modules label, type and quantity on the PVIS (https://pvis.epa.gov.tw/).
+                </p>
+                <h3>
+                    Clearance Notification
+                </h3>
+                <p>
+                    When the cumulative EOL solar PV modules reach a total of 50 or more, the solar power developers will be informed to deliver the waste modules within a predetermined time span to a designated temporary storage point or treatment plant. It can be delivered by developers themselves or by the commissioned public and private waste clearance firms with the D-2528 (waste PV panels) disposal and treatment license, which have been designated by the project.
+                </p>
+                <h3>
+                    Treatment processing
+
+                </h3>
+                <p>
+                    Local treatment (in Taiwan) has priority for the treatment of the EOL solar PV modules from the aspect of high-valued materials recovery and recycling. When large quantities of waste solar PV modules resulting from natural disasters or regular damage, overseas treatment (e.g. Germany and Japan) may be considered due to treatment capacity and the risk of environmental impact.
+                </p>
+                <p>
+                    Note: If there are further questions in handing the PVIS, please call the project direct line (03) 582-0009.
+                </p>
+
+            </div>
+        </main>
+    </div>
+    <footer class="bg-faded pb-1">
+        <div class="container">
+            <a href="#B" id="AB" name="B" accesskey="B" title="DownBlock" class="sr-only sr-only-focusable">:::</a>
+            <div class="row">
+                <div class="col-md-6 mt-1">
+                    <h4 class="title"><span>Copyright©</span></h4>
+                    <p>
+                        <i aria-hidden="true" class="fa fa-fw fa-copyright"></i><strong>All Rights Reserved︰</strong>Environmental
+                        Protection Administration, R.O.C.(Taiwan)
+                    </p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-map-marker"></i><strong>Address：</strong>83, Zhonghua Rd. Sec. 1, Zhongzheng District, Taipei City 100006, Taiwan(R.O.C.)</p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-phone"></i><strong>Contact Tel：</strong>@SysConfig.Cfg.ContactPhone</p>
+                </div>
+                <div class="col-md-6 mt-1">
+                    <h4 class="title"><span>About Us</span></h4>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-list"></i><a target="_blank" title="OpenWindow" rel="noopener noreferrer" href="https://www.epa.gov.tw/eng/E71EAFA771FF0D37">Privacy and Security Policy</a></p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-info"></i><a target="_blank" title="OpenWindow" rel="noopener noreferrer" href="https://www.epa.gov.tw/eng/747CF571E0ACBE79">Open Government Declaration</a></p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-phone"></i><strong>Support Phone：</strong>@SysConfig.Cfg.SupportPhone</p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-calendar"></i><strong>Webpage update date：</strong>@SysConfig.Cfg.UpdateDt.ToString("yyyy-MM-dd")</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        $(function () {
+            $("a.sr-only").click(function (event) {
+
+                var href = $(this).attr("href")
+                if (href == "#AC" || href == "#C") {
+                    $('html, body').animate({ scrollTop: $("#AC").offset().top - 100 }, 'fast');
+                    $("#AC").focus();
+                }
+                else if (href == "#B") {
+                    $('html, body').animate({ scrollTop: $("#AB").offset().top + 50 }, 'fast');
+                    $("#AB").focus();
+                } else if (href == "#U") {
+                    $('html, body').animate({ scrollTop: $("#AU").offset().top - 100 }, 'fast');
+                    $("#AU").focus();
+                }
+                event.preventDefault();
+            })
+            //$(document).bind('keypress', function (e) {
+            //    console.log(e.keyCode);
+            //    e.preventDefault();
+            //});
+        })
+    </script>
+</body>
+</html>

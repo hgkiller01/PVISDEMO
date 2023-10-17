@@ -1,0 +1,44 @@
+﻿@{
+    Layout = (string)ViewData["layout"] ?? "_Layout";
+}
+@section heads {
+    @*<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/css/alertify.min.css" />
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/css/themes/bootstrap.min.css" />
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/flatpickr@4.5.7/dist/flatpickr.min.css">*@
+
+    <link href="~/css/alertify.min.css" rel="stylesheet" />
+    <link href="~/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/css/flatpickr.min.css" rel="stylesheet" />
+    <style>
+        :focus {
+            border: 0.1rem solid red;
+        }
+    </style>
+    @RenderSection("heads", required: false)
+}
+
+@RenderBody()
+
+@section Scripts{
+    
+    <script src="~/NewJs/vue.min.js"></script>
+    <script src="~/NewJs/flatpickr.min.js"></script>
+    <script src="~/NewJs/zh-tw.js"></script>
+    <script src="~/NewJs/vue-flatpickr.min.js"></script>
+    <script src="~/NewJs/es6-promise.auto.min.js"></script>
+    <script src="~/NewJs/axios.min.js"></script>
+    <script src="~/NewJs/moment.min.js"></script>
+    <script src="~/NewJs/alertify.min.js"></script>
+    <script src="~/NewJs/jquery.blockUI.js"></script>
+    @*<script src="//cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/flatpickr@4.5.7/dist/flatpickr.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/flatpickr@4.5.7/dist/l10n/zh-tw.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/vue-flatpickr-component@8.1.2/dist/vue-flatpickr.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/es6-promise@4.2.6/dist/es6-promise.auto.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/axios@0.18.0/dist/axios.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/alertify.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/block-ui@2.70.1/jquery.blockUI.js"></script>*@
+    <script src="~/js/VueInit.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+}

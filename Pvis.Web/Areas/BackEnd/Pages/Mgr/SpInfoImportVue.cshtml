@@ -1,0 +1,125 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Profile.SpInfoImportVueModel
+@using Pvis.Biz.Extension
+@using System.Text.Json
+@using System.Text.Encodings.Web
+@{
+    var options = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
+    };
+}
+<div id="app" v-cloak>
+    @if (User.HasRole(RoleList.Admin, RoleList.Epa))
+    {
+        <fieldset>
+            <legend>滙入功能</legend>
+            <form asp-antiforgery="true" method="post" enctype="multipart/form-data">
+                <div class="form-inline inline-box">
+                    <label for="SearchId"></label>
+                    <input id="SearchId" v-model="SearchId" @@change="Search" type="text" class="col-2 form-control" />
+                    <label class="col-1" for="upload">滙入資料</label>
+                    <label for="Uids"></label>
+                    <select v-model="SelectId" id="Uids" name="Uid" class="form-control col-2">
+                        @foreach (var item in Model.CompanyList)
+                        {
+                            <option value="@item.Key">@item.Value</option>
+                        }
+                    </select>
+                    <input class="form-control col-3" type="file" id="upload" name="Upload" asp-for="Upload" accept="application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                    <label for="submitButton"></label>
+                    <input class="btn btn-outline-info col-2" id="submitButton" asp-page-handler="Import" type="submit" value="送出" />
+                </div>
+            </form>
+        </fieldset>
+        <fieldset>
+            <legend>批次刪除功能</legend>
+            <form asp-antiforgery="true" method="post">
+                <div class="form-inline inline-box">
+                    <label for="SelectPvid"></label>
+                    <input id="SelectPvid" v-model="Searchno" @@change="SearchPvno" type="text" class="col-2 form-control" />
+                    <label for="Pvids">選擇設備</label>
+                    <select v-model="SelectPvid" id="Pvids" name="Pvid" class="form-control col-3">
+                        @foreach (var item in Model.PvInofos)
+                        {
+                            <option value="@item.Key">@item.Value</option>
+                        }
+                    </select>
+                    <label for="status">狀態</label>
+                    <select id="status" name="status" class="form-control col-3">
+                        <option selected value="">全部</option>
+                        <option value="1">使用中</option>
+                        <option value="0">廢棄排出</option>
+                    </select>
+                    <label for="deleteButton"></label>
+                    <input class="btn btn-outline-danger col-2" id="deleteButton" asp-page-handler="Delete" type="submit" value="刪除" />
+                </div>
+            </form>
+        </fieldset>
+        <fieldset>
+            <legend>查詢功能</legend>
+            <form asp-antiforgery="true" method="post">
+                <div class="form-inline inline-box">
+                    <label class="form-control-label col-4">查詢設備與公司：</label>
+                    <input class="form-control col-4" name="PvSno" type="text" placeholder="輸入光電板序號" value="@Model.PvSno" />
+                    <button class="btn btn-outline-secondary col-2" asp-page-handler="GetSpAndCompany">送出</button>
+                    @if (!string.IsNullOrEmpty(Model.SearchResult))
+                    {
+                        <div class="alert alert-success col-12" role="alert">
+                            @Model.SearchResult
+                        </div>
+                    }
+
+                </div>
+            </form>
+        </fieldset>
+        <fieldset>
+            <legend>修改序號</legend>
+            <form asp-antiforgery="true" method="post">
+                <div class="form-inline inline-box">
+                    <label class="form-control-label col-3">修改太陽能光電板序號：</label>
+                    <input class="form-control col-3" name="OriginalPvSno" type="text" value="@Model.OriginalPvSno" placeholder="輸入原始光電板序號" />
+                    <input class="form-control col-3" name="ChangePvSno" type="text" value="@Model.ChangePvSno" placeholder="輸入修改光電板序號" />
+                    <button class="btn btn-outline-secondary col-2" asp-page-handler="SetPvSno">送出</button>
+                </div>
+            </form>
+        </fieldset>
+
+    }
+</div>
+
+@section Scripts{
+    @if (ViewData["result"] != null)
+    {
+        <script>
+            alert("@ViewData["result"].ToString()")
+        </script>
+    }
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                AllUid: @Html.Raw(JsonSerializer.Serialize(Model.CompanyList,options)),
+                AllPvno : @Html.Raw(JsonSerializer.Serialize(Model.PvInofos,options)),
+                SearchId: "",
+                SelectId: "",
+                Searchno: "",
+                SelectPvid:""
+            },
+            methods: {
+                Search: function () {
+                    var self = this;
+                    self.SelectId = getKeyByValue(self.AllUid, self.SearchId);
+                },
+                SearchPvno: function () {
+                    var self = this;
+                    self.SelectPvid = getKeyByValue(self.AllPvno, self.Searchno);
+                }
+            }
+        })
+        function getKeyByValue(object, value) {
+            return Object.keys(object).find(key => object[key].startsWith(value));
+        }
+    </script>
+}

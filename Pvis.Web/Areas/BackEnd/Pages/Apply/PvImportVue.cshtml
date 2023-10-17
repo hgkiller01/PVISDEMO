@@ -1,0 +1,366 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.PvImportVue
+<style type="text/css">
+    html {
+        background-color: #f8f9fc !important;
+    }
+
+    .tr_bg {
+        background-color: #eaf5ff;
+    }
+
+    #TotalRow td {
+        background-color: #fffbe2;
+    }
+
+    .rwd-table {
+        overflow: hidden;
+    }
+
+        .rwd-table th,
+        .rwd-table td {
+            margin: 0.5em 1em;
+        }
+
+    .rwd-table {
+        min-width: 100%;
+    }
+
+        .rwd-table th {
+            display: none;
+        }
+
+        .rwd-table td {
+            display: block;
+        }
+
+            .rwd-table td:before {
+                content: attr(data-th) "";
+                font-weight: bold;
+                display: inline-block;
+            }
+
+        .rwd-table th, .rwd-table td {
+            text-align: center;
+        }
+
+            .rwd-table th, .rwd-table td:before {
+                font-weight: bold;
+            }
+
+    @@media (min-width: 480px) {
+        .rwd-table td:before {
+            display: none;
+        }
+
+        .rwd-table th, .rwd-table td {
+            display: table-cell;
+            padding: 0.25em 0.5em;
+        }
+
+            .rwd-table th:first-child,
+            .rwd-table td:first-child {
+                padding-left: 0;
+            }
+
+            .rwd-table th:last-child,
+            .rwd-table td:last-child {
+                padding-right: 0;
+            }
+
+        .rwd-table th,
+        .rwd-table td {
+            padding: 1em !important;
+        }
+    }
+</style>
+<div id="contents" v-cloak>
+    @*<div>{{Results}}</div>*@
+    <div class="form-inline inline-box">
+        <input type="button" value="新增資料" @@click="OpenAddWin()" class="btn btn-outline-primary mt-3" />
+    </div>
+    <div class="form-inline inline-box mt-3">
+        <div>稽核行程編號：@ViewData["No"]</div>
+    </div>
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center table-bordered rwd-table">
+            <thead>
+                <tr class="tr_bg">
+                    <th rowspan="3">案場排出登記申請編號</th>
+                    <th rowspan="3">案場排出片數</th>
+                    <th colspan="6">PV片數</th>
+                    <th rowspan="3">PV重量<br />(公斤)</th>
+                    <th rowspan="3">包材重<br />(公斤)</th>
+                    <th rowspan="3">功能</th>
+                </tr>
+                <tr class="tr_bg">
+                    <th colspan="3">有鋁框</th>
+                    <th colspan="3">無鋁框</th>
+                </tr>
+                <tr class="tr_bg">
+                    <th>有序號</th>
+                    <th>無序號</th>
+                    <th>序號不符</th>
+                    <th>有序號</th>
+                    <th>無序號</th>
+                    <th>序號不符</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="i in PvImportData">
+                    <td data-th="案場編號：">{{i.BookingNoId}}<span v-if="1 < 0">{{i.Id}}</span></td>
+                    <td data-th="案場排出片數">{{i.Pvcount}}</td>
+                    <td data-th="有鋁框有序號：">{{i.AL_O_SN_O}}</td>
+                    <td data-th="有鋁框無序號：">{{i.AL_O_SN_X}}</td>
+                    <td data-th="有鋁框序號不符：">{{i.AL_O_SN_N}}</td>
+                    <td data-th="無鋁框有序號：">{{i.AL_X_SN_O}}</td>
+                    <td data-th="無鋁框無序號：">{{i.AL_X_SN_X}}</td>
+                    <td data-th="無鋁框序號不符：">{{i.AL_X_SN_N}}</td>
+                    <td data-th="PV重量(公斤)：">{{i.PV_Weight}}</td>
+                    <td data-th="包材重(公斤)：">{{i.Pkg_Weight}}</td>
+                    <td data-th="功能選單：">
+                        <button type="button" class="btn btn-outline-primary" @@click="OpenEditWin(i)">編輯</button>
+                        <button type="button" class="btn btn-outline-danger" @@click="return confirm('您確定要刪除這筆資料嗎?') ? DelData(i) : '';">刪除</button>
+                    </td>
+                </tr>
+                <tr id="TotalRow">
+                    <td>總計</td>
+                    <td data-th="案場排出片數">{{tPvCoutSum}}</td>
+                    <td data-th="有鋁框有序號：">{{tALOSNO}}</td>
+                    <td data-th="有鋁框無序號：">{{tALOSNX}}</td>
+                    <td data-th="有鋁框序號不符：">{{tALOSNN}}</td>
+                    <td data-th="無鋁框有序號：">{{tALXSNO}}</td>
+                    <td data-th="無鋁框無序號：">{{tALXSNX}}</td>
+                    <td data-th="無鋁框序號不符：">{{tALXSNN}}</td>
+                    <td data-th="PV重量(公斤)：">{{tPvWeight}}</td>
+                    <td data-th="包材重(公斤)：">{{tPkgWeight}}</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Modal視窗 -->
+        <div class="modal fade" id="DataModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" data-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">
+                            <span v-if="Status == 'New'">資料新增</span>
+                            <span v-if="Status == 'Edit'">修改資料</span>
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" v-model="SetData.Id" />
+                        <div class="form-row form-inline">
+                            <p>案場排出登記申請編號：</p><p v-if="Status == 'Edit'">{{SetData.BookingNoId}}</p>
+                            <select id="BookingNoId" class="form-control" v-model="SetData.BookingNoId" v-if="Status == 'New'">
+                                <option v-for="i in SelectBookingNo" :value="i">{{i}}</option>
+                            </select>
+                        </div>
+                        <table class="table text-center table-bordered rwd-table">
+                            <tr>
+                                <td><p v-if="Status == 'Edit'">案場排出登記總片數:{{SetData.Pvcount}}</p></td>
+                            </tr>
+                        </table>
+                        
+                        <br />
+                        <table class="table text-center table-bordered rwd-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="6">PV片數</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3">有鋁框</th>
+                                    <th colspan="3">無鋁框</th>
+                                </tr>
+                                <tr>
+                                    <th>有序號</th>
+                                    <th>無序號</th>
+                                    <th>序號不符</th>
+                                    <th>有序號</th>
+                                    <th>無序號</th>
+                                    <th>序號不符</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td data-th="有鋁框有序號">
+                                        <input name="AL_O_SN_O" class="form-control" v-model="SetData.AL_O_SN_O" type="number" />
+                                    </td>
+                                    <td data-th="有鋁框無序號">
+                                        <input name="AL_O_SN_X" class="form-control" v-model="SetData.AL_O_SN_X" type="number" />
+                                    </td>
+                                    <td data-th="有鋁框序號不符">
+                                        <input name="AL_O_SN_N" class="form-control" v-model="SetData.AL_O_SN_N" type="number" />
+                                    </td>
+                                    <td data-th="無鋁框有序號">
+                                        <input name="AL_X_SN_O" class="form-control" v-model="SetData.AL_X_SN_O" type="number" />
+                                    </td>
+                                    <td data-th="無鋁框無序號">
+                                        <input name="AL_X_SN_X" class="form-control" v-model="SetData.AL_X_SN_X" type="number" />
+                                    </td>
+                                    <td data-th="無鋁框序號不符">
+                                        <input name="AL_X_SN_N" class="form-control" v-model="SetData.AL_X_SN_N" type="number" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="form-row form-inline mt-5">
+                            <table width="100%" class="rwd-table">
+                                <tr>
+                                    <td><p>PV重量(公斤)：</p><input name="PV_Weight" class="form-control" v-model="SetData.PV_Weight" /></td>
+                                    <td><p>包材重(公斤)：</p><input name="Pkg_Weight" class="form-control" v-model="SetData.Pkg_Weight" /></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer-full-width modal-footer">
+                        <button v-if="Status == 'New'" class="btn btn-primary" @@click="AddData()">新增</button>
+                        <button v-if="Status == 'Edit'" class="btn btn-primary" @@click="EditData()">修改</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>
+    </environment>
+    <script>
+        axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
+        var Content = new Vue({
+            el: "#contents",
+            data: {
+                PvImportData: [],
+                Results: "",
+                SetData: {},
+                Status: "New",
+                ModalShowCtrl: false,
+                SelectBookingNo: [],
+                Id: 0,
+                Aud_Sch_No: "",
+                BookingNoId: "",
+                AL_O_SN_O: 0,
+                AL_O_SN_X: 0,
+                AL_O_SN_N: 0,
+                AL_X_SN_O: 0,
+                AL_X_SN_X: 0,
+                AL_X_SN_N: 0,
+                PV_Weight: 0,
+                Pkg_Weight: 0,
+                PvCoutSum:0,
+            },
+            computed: {
+                tALOSNO: function () { var tALOSNO = 0; this.PvImportData.forEach(e => { tALOSNO += e.AL_O_SN_O; }); return Math.round(tALOSNO * 100) / 100 },
+                tALOSNX: function () { var tALOSNX = 0; this.PvImportData.forEach(e => { tALOSNX += e.AL_O_SN_X; }); return Math.round(tALOSNX * 100) / 100 },
+                tALOSNN: function () { var tALOSNN = 0; this.PvImportData.forEach(e => { tALOSNN += e.AL_O_SN_N; }); return Math.round(tALOSNN * 100) / 100 },
+                tALXSNO: function () { var tALXSNO = 0; this.PvImportData.forEach(e => { tALXSNO += e.AL_X_SN_O; }); return Math.round(tALXSNO * 100) / 100 },
+                tALXSNX: function () { var tALXSNX = 0; this.PvImportData.forEach(e => { tALXSNX += e.AL_X_SN_X; }); return Math.round(tALXSNX * 100) / 100 },
+                tALXSNN: function () { var tALXSNN = 0; this.PvImportData.forEach(e => { tALXSNN += e.AL_X_SN_N; }); return Math.round(tALXSNN * 100) / 100 },
+                tPvWeight: function () { var tPvWeight = 0; this.PvImportData.forEach(e => { tPvWeight += e.PV_Weight; }); return Math.round(tPvWeight * 100) / 100 },
+                tPkgWeight: function () { var tPkgWeight = 0; this.PvImportData.forEach(e => { tPkgWeight += e.Pkg_Weight; }); return Math.round(tPkgWeight * 100) / 100 },
+                tPvCoutSum: function () {
+                    var tPvCoutSum = 0; this.PvImportData.forEach(e => { tPvCoutSum += e.Pvcount; }); return tPvCoutSum;
+                }
+            },
+            methods: {
+                OpenAddWin: function (id) {
+                    var m = this;
+                    m.SetData = {};
+                    m.Status = "New";
+                    m.SetData.Id = id;
+                    $("#DataModal").modal("show");
+                },
+                AddData: function () {
+                    var m = this;
+                    m.SetData.Id = 0;
+                    m.SetData.Aud_Sch_No = "@ViewData["No"]";
+
+                    m.$http.post({
+                        ApiDesc: "新增資料",
+                        url: "@Url.Content("~/api/Pv/Insert")",
+                        data: m.SetData,
+                        success: function (result) {
+                            if (result.res == "OK") {
+                                $("#DataModal").modal("hide");
+                                m.SetData = {};
+                                m.FirstLoad();
+                            }
+                            else {
+                                $("#DataModal").modal("hide");
+                                alert(result.res);
+                            }
+                        }
+                    })
+                },
+                OpenEditWin: function (i) {
+                    var m = this;
+                    m.SetData = i;
+                    m.Status = "Edit";
+                    $("#DataModal").modal("show");
+                },
+                EditData: function () {
+                    var m = this;
+                    m.$http.post({
+                        ApiDesc: "編輯資料",
+                        url: "@Url.Content("~/api/Pv/Edit")",
+                        data: m.SetData,
+                        success: function () {
+                            $("#DataModal").modal("hide");
+                            m.SetData = {};
+                            m.FirstLoad();
+                        }
+                    })
+                },
+                DelData: function (i) {
+                    var m = this;
+                    m.SetData = i;
+                    m.Status = "Del";
+                    m.$http.post({
+                        ApiDesc: "刪除資料",
+                        url: "@Url.Content("~/api/Pv/Delete")",
+                        data: m.SetData,
+                        success: function () {
+                            $("#DataModal").modal("hide");
+                            m.SetData = {};
+                            m.FirstLoad();
+                        }
+                    })
+                },
+                GetSelectBookingNo: function () {
+                    var m = this;
+                    m.$http.post({
+                        ApiDesc: "取得案場登記申請編號資料",
+                        url: "@Url.Content("~/api/Pv/GetBookingNoIdList")",
+                        data: {No: "@ViewData["No"]"},
+                        success: function (result) {
+                            result.forEach(e => { m.SelectBookingNo.push(e.BNo); });
+                        }
+                    })
+                },
+                FirstLoad: function () {
+                    var m = this;
+                    m.$http.post({
+                        ApiDesc: "取得廢PV進廠頁面載入資料",
+                        url: "@Url.Content("~/api/Pv/GetFirstLoadData")",
+                        data: {No: "@ViewData["No"]"},
+                        success: function (result) {
+                            m.PvImportData = result;
+                        }
+                    })
+                }
+            },
+            created: function () {
+                var m = this;
+                m.GetSelectBookingNo();
+                m.FirstLoad();
+            }
+        })
+    </script>
+}

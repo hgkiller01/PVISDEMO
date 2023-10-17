@@ -1,0 +1,147 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "首頁";
+    var lay = Layout;
+}
+@section heads {
+    @*<link async rel="stylesheet" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.css" />
+    <link async rel="stylesheet" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.min.css" />*@
+<link href="~/slick/slick.min.css" rel="stylesheet" />
+<link href="~/slick/slick-theme.min.css" rel="stylesheet" />
+    <script src="~/js/slick-carousel.js" asp-append-version="true"></script>
+}
+<div class="container-fluid p-0">
+    <picture>
+        <source media="(max-width: 750px)" alt="@SysConfig.Cfg.SiteName"  srcset="~/img/banner-s.jpg" />
+        <img class="w-100" alt="@SysConfig.Cfg.SiteName" asp-append-version="true" src="~/img/banner.jpg">
+    </picture>
+    @*<img class="w-100 d-sm-down-none" alt="@SysConfig.Cfg.SiteName" asp-append-version="true" src="~/img/banner.jpg">*@
+    @*<img class="w-100 d-md-none" alt="@SysConfig.Cfg.SiteName" asp-append-version="true" src="~/img/banner-s.jpg">*@
+</div>
+<div class="container mt-2">
+    <div class="row text-center" id="card">
+        <div class="card">
+            <img class="card-img img-fluid" src="~/img/card/1.png" alt="廢太陽光電板回收處理規劃說明">
+            <div class="card-img-overlay">
+                <h2 class="card-title" style="font-size:1.7em">
+                    <a href="~/info/Plan">廢太陽光電板回收處理規劃說明</a>
+                </h2>
+            </div>
+        </div>
+        <div class="card">
+            <img class="card-img img-fluid" src="~/img/card/3.png" alt="廢太陽光電板回收 3C1R 八步驟">
+            <div class="card-img-overlay">
+                <h2 class="card-title" style="font-size:1.7em">
+                    <a href="~/info/Step">廢太陽光電板回收 3C1R 八步驟</a>
+                </h2>
+            </div>
+        </div>
+        <div class="card">
+            <img class="card-img img-fluid" src="~/img/card/2.png" alt="廢太陽光電板清除處理機構">
+            <div class="card-img-overlay">
+                <h2 class="card-title" style="font-size:1.7em">
+                    <a href="~/info/Organ">廢太陽光電板清除處理機構</a>
+                </h2>
+            </div>
+        </div>
+        <div class="card">
+            <img class="card-img img-fluid" src="~/img/card/4.png" alt="問與答">
+            <div class="card-img-overlay">
+                <h2 class="card-title" style="font-size:1.7em">
+                    <a href="~/info/QnA">問與答</a>
+                </h2>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-lg-12" id="news">
+            <h2 class="title"><span>最新消息</span></h2>
+            <ul class="list-unstyled m-0">
+                @foreach (var item in Model.News)
+                {
+                    <li class="text-truncate"><a asp-page="NewsItem" asp-route-id="@item.Pid"><span class="badge @(item.IsHot ? "bg-warning" : "badge-outline")" title="@Html.DisplayNameFor(model => model.News[0].PostDt)">@item.PostDt.yyyyMMdd()</span>@item.Subject</a></li>
+                }
+            </ul>
+            <div class="text-end">
+                <a class="btn btn-sm btn-outline" role="button" title="更多消息" href="~/News">更多</a>
+            </div>
+        </div>
+        @*<div class="col-lg-6" id="stats">
+            <h4 class="title"><span>數據統計</span></h4>
+            <div class="d-flex">
+                <label>回收清理量：</label>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped bg-warning" role="progressbar" style="width: 70%" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">70%</div>
+                </div>
+            </div>
+            <div class="d-flex">
+                <label>貯存量：</label>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped bg-warning" role="progressbar">-</div>
+                </div>
+            </div>
+            <div class="d-flex">
+                <label>處理量：</label>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped bg-warning" role="progressbar">-</div>
+                </div>
+            </div>
+        </div>*@
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-12">
+            <h3 class="title"><span>相關連結</span></h3>
+            <div id="link">
+                <a target="_blank" rel="noopener noreferrer" title="另開新視窗-經濟部能源局太陽光電模組產品登錄" href="https://www.tcpv.org.tw/">
+                    <img class="w-100 h-100 img-thumbnail" src="~/img/link/1.png" alt="經濟部能源局太陽光電模組產品登錄">
+                </a>
+                <a target="_blank" rel="noopener noreferrer" title="另開新視窗-太陽光電單一服務窗口" href="https://www.mrpv.org.tw/">
+                    <img class="w-100 h-100 img-thumbnail" src="~/img/link/3.png" alt="太陽光電單一服務窗口">
+                </a>
+                <a target="_blank" rel="noopener noreferrer" title="另開新視窗-事業廢棄物申報及管理資訊系統" href="https://waste.epa.gov.tw/">
+                    <img class="w-100 h-100 img-thumbnail" src="~/img/link/4.png" alt="事業廢棄物申報及管理資訊系統">
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="jumbotron py-2 my-1">
+        <div class="row">
+            <div class="col-md-9">
+                <h4>太陽光電板廢棄排出登記</h4>
+            </div>
+            <div class="col-md-3 text-end">
+                <a class="btn btn-lg btn-warning btn-block" asp-area="BackEnd" asp-page="/Login">
+                    <i aria-hidden="true" class="fa fa-sign-in"></i>
+                    系統登入
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script>
+        $('#card').slick({
+            autoplay: true,
+            autoplaySpeed: 5000,
+            centerMode: true,
+            dots: true,
+            slidesToShow: 4,
+            responsive: [
+                { breakpoint: 980, settings: { slidesToShow: 2 } },
+                { breakpoint: 480, settings: { slidesToShow: 1 } }
+            ]
+        });
+        $('#link').slick({
+            dots: true,
+            slidesToShow: 6,
+            responsive: [
+                { breakpoint: 980, settings: { slidesToShow: 3 } },
+                { breakpoint: 480, settings: { slidesToShow: 1 } }
+            ]
+        });
+        $(".slick-slide").removeAttr("aria-hidden");
+    </script>
+}

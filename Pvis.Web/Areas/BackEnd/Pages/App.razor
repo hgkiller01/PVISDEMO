@@ -1,0 +1,18 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager manager
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="routeData">
+                <NotAuthorized>
+                    @if (true) { manager.NavigateTo("BackEnd",true); }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        </Found>
+        <NotFound>
+            <h1>找不到網頁</h1>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+

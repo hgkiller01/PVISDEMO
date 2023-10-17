@@ -1,0 +1,86 @@
+﻿@page
+@{
+    ViewData["Title"] = "廢太陽光電板清除處理機構";
+}
+@section heads{
+    @*<link rel="stylesheet" href="//cdn.datatables.net/1.10.18/css/dataTables.bootstrap4.min.css">*@
+<link href="~/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+}
+<div class="container py-1">
+    <p class="h5 mb-1">查詢結果為可清除、處理「D-2528裝置使用後廢棄之太陽能光電板」，如有誤植請以<a target="_blank" rel="noopener noreferrer" title="另開新視窗" href="//wcds.epa.gov.tw">清除處理機構服務管理資訊系統</a>公告資訊為主。</p>
+    <ul class="nav nav-tabs h4">
+        <li class="nav-item"><a href="#cle" data-toggle="tab" class="nav-link" data-cfw="tab">清除機構</a></li>
+        <li class="nav-item"><a href="#tre" class="nav-link" data-cfw="tab">處理機構</a></li>
+    </ul>
+    <div class="tab-content tab-content-border">
+        <div class="tab-pane container active" id="cle">
+            <table class="table table-scroll text-nowrap" id="clean">
+                <thead>
+                    <tr class="bg-faded">
+                        <th>縣市別</th>
+                        <th class="w-100">機構名稱</th>
+                        <th>級別</th>
+                        <th>機構電話</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div class="tab-pane container" id="tre">
+            <table class="table table-scroll text-nowrap" id="treat">
+                <thead>
+                    <tr class="bg-faded">
+                        <th>縣市別</th>
+                        <th class="w-100">機構名稱</th>
+                        <th>級別</th>
+                        <th>機構電話</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    @*<script src="//cdn.datatables.net/v/bs4/dt-1.10.18/datatables.min.js"></script>*@
+<script src="~/NewJs/datatables.min.js"></script>
+    <script src="~/js/DataTables/setting.js"></script>
+    <script>
+        /** 設置DataTable
+         * @@param { String } id 容器id
+         */
+        function setDataTable(id) {
+            var url = '@Url.Content("~/mgr/organ")' + id + '.json';
+            var item = {};
+            var opt = {
+                data: [],
+                pageLength: 25,
+                pagingType: "full"
+            }
+            if (id == "treat") {
+                opt = {
+                    data: [],
+                    pageLength: 25,
+                    paging: false
+                }
+            }
+
+            $.getJSON(url, function (json) {
+                opt.data = json.data;
+            }).always(function () {
+                item = $('#' + id).DataTable(opt);
+                console.log(item.page.info());
+            })
+        }
+
+        setDataTable('clean');
+        setDataTable('treat');
+        $(function () {
+            $("th").attr("scope", "col");
+            $(".tab-pane").removeClass("fade");
+            $('#cle,#tre').on('draw.dt', function () {
+                /*$("#clean_ellipsis > .page-link").remove();*/
+            });
+
+        })
+        
+    </script>
+}

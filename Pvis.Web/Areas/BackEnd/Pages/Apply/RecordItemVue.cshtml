@@ -1,0 +1,378 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.RecordItemVue
+@using Pvis.Biz.Extension
+@{
+}
+<style>
+    td,th {
+        word-break:break-word;
+    }
+    .has-search .form-control {
+        padding-left: 2.375rem;
+    }
+
+    .has-search .form-control-feedback {
+        position: absolute;
+        z-index: 2;
+        display: block;
+        width: 2.375rem;
+        height: 2.375rem;
+        line-height: 2.375rem;
+        text-align: center;
+        pointer-events: none;
+        color: #aaa;
+    }
+    html {
+        background-color: #f8f9fc !important;
+    }
+</style>
+<div id="app" v-cloak>
+    <div>
+        <h5>稽核行程編號:@ViewData["No"].ToString()</h5> 
+    </div>
+    <div class="form-inline inline-box">
+        <input type="button" value="新增產出" @@click="AddModel()" class="btn btn-outline-primary" />
+    </div>
+    <!-- 查詢結果 -->
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center" style="table-layout:fixed;">
+            <thead>
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.Ritem.Code_Type)</th>
+                    <th>@Html.DisplayNameFor(model => model.Ritem.Code_no)</th>
+                    <th>@Html.DisplayNameFor(model => model.Ritem.Code_name)</th>
+                    <th>@Html.DisplayNameFor(model => model.Ritem.Process)</th>
+                    <th>@Html.DisplayNameFor(model => model.Ritem.ItemWeight)</th>
+                    <th>@Html.DisplayNameFor(model => model.Ritem.MakeDate)</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{ChangeTypes(item.Code_Type)}}</td>
+                    <td>{{item.Code_no}}</td>
+                    <td>{{item.Code_name + GetItemName2(item)}}</td>
+                    <td>{{ChangeProcess(item.Process)}}</td>
+                    <td>{{item.ItemWeight}}</td>
+                    <td>{{item.MakeDate|SmaillDate}}</td>
+                    <td>
+                        @if (User.HasRole(RoleList.Admin, RoleList.Store , RoleList.Teart))
+                        {
+                            <input type="button" class="btn btn-outline-primary" value="編輯" v-on:click="EditModel(item)" />
+                            <input type="button" class="btn btn-outline-danger" value="刪除" v-on:click="Delete(item)" />
+                        }
+
+
+                        @*<input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item)" />
+                            <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index+pageStart);" v-if="item.Status == '1' || item.Status ==  'M'" />*@
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- 查詢結果 -->
+    <!-- 分頁控制 -->
+    <div class="text-right">
+        <partial name="_PagerRecListPartial" />
+    </div>
+    <!-- 分頁控制 -->
+    <div class="modal fade" id="DataModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">
+                        <span v-if="Status == 'ADD'">新增</span>
+                        <span v-if="Status == 'Edit'">修改</span>
+                    </h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <input type="hidden" v-model="EditItem.Aud_Sch_No" />
+                <input type="hidden" v-model="EditItem.RecordIemID" />
+                <div class="modal-body">
+                    <div>
+                        <div class="form-group row">
+                            <label for="Code_Type" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.Code_Type)</label>
+                            <div class="col-md-9">
+                                <select v-model="Code_Type" class="form-control" id="Code_Type" @@change="ChangeKind">
+                                    <option v-for="kind in ItemKind" v-bind:value="kind.code">{{kind.Name}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group has-search row">
+                            <label for="searchcode" class="col-md-3 col-form-label">&nbsp;</label>
+                            <div class="col-md-9">
+                                <span class="fa fa-search form-control-feedback"></span>
+                                <input type="text" class="form-control" v-model="CodeSearched" @@input="SearchCode" id="searchcode" placeholder="搜尋代碼">
+                            </div>
+                            <label for="Code_no" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.Code_no)</label>
+                            <div class="col-md-9">
+                                <select v-model="Code_no" class="form-control" id="Code_no" size="5" @@change="ChangeCode">
+                                    <option v-for="item in SelectList" v-bind:value="item.Code_no">{{item.Code_no}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="Code_name" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.Code_name)</label>
+                            <div class="col-md-9">
+                                {{Code_name}}
+                            </div>
+                        </div>
+                        <div v-if="OtherItem" class="form-group row">
+                            <label for="ItemName" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.ItemName)</label>
+                            <div class="col-md-9">
+                                <input type="text" class="form-control" v-model="EditItem.ItemName" id="ItemName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="ItemWeight" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.MakeDate)</label>
+                            <div class="col-md-9">
+                                <flat-pickr v-model="EditItem.MakeDate" :config="config" name="MakeDate" class="form-control" id="MakeDate">
+                                </flat-pickr>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="ItemWeight" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.Process)</label>
+                            <div class="col-md-9">
+                                <select v-model="EditItem.Process" class="form-control" id="Process">
+                                    <option v-for="item in ProcessKind" :value="item.key">
+                                        {{item.Name}}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="ItemWeight" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.Ritem.ItemWeight)</label>
+                            <div class="col-md-9">
+                                <input type="number" class="form-control" v-model="EditItem.ItemWeight" id="ItemWeight" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-full-width modal-footer">
+                        <button v-if="Status == 'ADD'" class="btn btn-primary" @@click="Add()">新增</button>
+                        <button v-if="Status == 'Edit'" class="btn btn-primary" @@click="Edit()">修改</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script>
+        Vue.filter('SmaillDate', function (value) {
+            if (value) {
+                return moment(String(value)).format('YYYY/MM/DD');
+            }
+        });
+        var app = new Vue({
+            el: "#app",
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],//所有主檔
+                ItemList: [],//所有廢棄物,產品 原料物清單
+                EditItem: {},
+                DefaultCodeType: "Waste",
+                selectcode: "",
+                SelectList: [],//目前代碼下拉清單
+                ItemName: "",
+                config: {
+                    altFormat: 'M j, Y',
+                    dateFormat: "Y-m-d",
+                },
+                ItemKind: [
+                    { Name: "廢棄物", code: "Waste" },
+                    { Name: "產品、原料物", code: "Prod"}
+                ],
+                ProcessKind: [
+                    { Name: "拆解", key: 1 },
+                    { Name: "破碎", key: 2 },
+                ],
+                Code_Type: "",
+                Code_no: "",
+                Code_name: "",
+                Status: "ADD",
+                OtherItem: false,
+                CodeSearched : ""
+
+            },
+            methods: {
+                GetItemName2: function (item) {
+                    var itemName = item.Code_no.substring(4, 6) == "99" && item.Code_Type == "Prod" ? item.ItemName : "";
+                    if (itemName)
+                        return "(" + itemName + ")";
+                    else
+                        return "";
+                },
+                ChangeTypes: function (item) {
+                    if (item == "Waste") return "廢棄物";
+                    if (item == "Prod") return "產品、原料物";
+                },
+                ChangeProcess: function (item) {
+                    if (item == 1) return "拆解";
+                    if (item == 2) return "破碎";
+                },
+                GetList: function () {
+                    var self = this;
+                    this.$http.post({
+                        ApiDesc: "取得所有資料",
+                        data: {
+                            No: "@ViewData["No"].ToString()"
+                        },
+                        url: "@Url.Content("~/api/RecordItem/GetRecordItems")",
+                        success: function (result) {
+                            self.RecList = result;
+                        }
+                    })
+                },
+                GetItems: function () {
+                    var self = this;
+                    this.$http.post({
+                        ApiDesc: "取得所有類別資料",
+                        data: {},
+                        url: "@Url.Content("~/api/RecordItem/GetWasteProds")",
+                        success: function (result) {
+                            self.ItemList = result;
+                        }
+                    })
+                },
+                SearchCode: function () {
+                    var self = this;
+                    self.ChangeKind("reset");
+                    self.SelectList = self.SelectList.filter(function (item) {
+                        if (self.CodeSearched) {
+                            if (item.Code_no.toUpperCase().startsWith(self.CodeSearched.toUpperCase()))
+                                return item;
+                        }
+                    });
+                    if (!self.CodeSearched) {
+                        self.ChangeKind();
+                    }
+                    self.Code_no = self.SelectList[0].Code_no;
+                    self.Code_name = self.SelectList[0].Code_name;
+                    self.ChangeCode("reset");
+                },
+                ChangeKind: function (item) {
+                    var self = this;
+                    self.SelectList = self.ItemList.filter(function (item, index, array) {
+                        return item.Code_Type == self.Code_Type;
+                    })
+                    if (item != "reset") {
+                        self.CodeSearched = "";
+                    }
+                    self.Code_no = self.SelectList[0].Code_no;
+                    self.Code_name = self.SelectList[0].Code_name;
+                    self.OtherItem = self.Code_no.substring(4, 6) == "99" && self.Code_Type == "Prod" ? true : false;
+                },
+                ChangeCode: function (item) {
+                    var self = this;
+                    self.Code_name = self.SelectList.find(e => e.Code_no == self.Code_no).Code_name;
+                    if (item != "reset")
+                        self.CodeSearched = self.Code_no;
+                    self.OtherItem = self.Code_no.substring(4, 6) == "99" && self.Code_Type == "Prod" ? true : false;
+                },
+                Delete: function (item) {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "刪除資料",
+                        url: "@Url.Content("~/api/RecordItem/DeleteItem")",
+                        data: { ID: item.RecordIemID },
+                        "Content-Type": 'application/x-www-form-urlencoded',
+                        success: function () {
+                            UiHelper.ShowMsg("資料已刪除");
+                            self.GetList();
+                        }
+                    })
+                },
+                EditModel: function (item) {
+                    var self = this;
+                    self.EditItem = item;
+                    self.SelectList = self.ItemList.filter(function (item, index, array) {
+                        return item.Code_Type == self.EditItem.Code_Type;
+                    })
+                    self.Code_Type = item.Code_Type;
+                    self.Code_name = item.Code_name;
+                    self.Code_no = item.Code_no;
+                    self.Status = "Edit";
+                    self.CodeSearched = self.Code_no;
+                    self.SearchCode();
+                    self.OtherItem = self.Code_no.substring(4, 6) == "99" && self.Code_Type == "Prod" ? true : false;
+                    $("#DataModal").modal("show");
+
+                },
+                Edit: function (item) {
+                    var self = this;
+                    self.EditItem.Code_Type = self.Code_Type;
+                    self.EditItem.Code_name = self.Code_name;
+                    self.EditItem.Code_no = self.Code_no;
+                    if (self.OtherItem) {
+                        if (!(self.EditItem.ItemName)) {
+                            UiHelper.ShowErr("其他物料名稱尚未填寫!");
+                            return;
+                        }
+
+                    }
+                    self.$http.post({
+                        ApiDesc: "修改資料",
+                        url: "@Url.Content("~/api/RecordItem/EditItem")",
+                        data: self.EditItem ,
+                        success: function () {
+                            self.GetList();
+                            $("#DataModal").modal("hide");
+                        }
+                    })
+
+                },
+                AddModel: function () {
+                    var self = this;
+                    self.SelectList = self.ItemList.filter(function (item, index, array) {
+                        return item.Code_Type == self.DefaultCodeType;
+                    })
+                    self.Code_Type = self.DefaultCodeType;
+                    self.Code_no = self.SelectList[0].Code_no;
+                    self.Code_name = self.SelectList[0].Code_name;
+                    self.EditItem.RecordIemID = 0;
+                    self.EditItem.MakeDate = "";
+                    self.EditItem.ItemWeight = "";
+                    self.EditItem.Process = 1;
+                    self.Status = "ADD";
+                    self.EditItem.Aud_Sch_No = "@ViewData["No"].ToString()";
+                    self.OtherItem = self.Code_no.substring(4, 6) == "99" && self.Code_Type == "Prod" ? true : false;
+                    $("#DataModal").modal("show");
+                },
+                Add: function () {
+                    var self = this;
+                    self.EditItem.Code_Type = self.Code_Type;
+                    self.EditItem.Code_no = self.Code_no;
+                    self.EditItem.Code_name = self.Code_name;
+                    self.EditItem.Aud_Sch_No = "@ViewData["No"].ToString()";
+                    if (self.OtherItem) {
+                        UiHelper.ShowErr("其他物料名稱尚未填寫!");
+                        return;
+                    }
+                        
+                    self.$http.post({
+                        ApiDesc: "新增資料",
+                        data: self.EditItem,
+                        url: "@Url.Content("~/api/RecordItem/AddItem")",
+                        success: function () {
+                            self.GetList();
+                            $("#DataModal").modal("hide");
+                        }
+                    })
+                },
+                CheckItem: function (item) {
+
+                }
+            },
+            created: function () {
+                var self = this;
+                self.GetList();
+                self.GetItems();
+            }
+        })
+    </script>
+}

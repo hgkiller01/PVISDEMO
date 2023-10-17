@@ -1,0 +1,363 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Mgr.AccountMgrModel
+@using Pvis.Biz.Extension;
+@{
+    ViewData["Title"] = "帳號管理";
+}
+
+    <div id="app">
+        <div class="form-inline inline-box">
+            <label for="keyword" class="control-label">關鍵字查詢:</label>
+            <input type="text" class="form-control" id="keyword" v-model="Qry.KeyWord" />
+            <div class="m-auto"></div>
+            <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+            @if (User.HasRole(RoleList.Admin))
+            {
+                <input type="button" value="新增資料" @@click="Edit(null,-1)" class="btn btn-outline-primary" />
+            }
+        </div>
+        <div>
+            <label class="control-label ml-4 d-inline-block">權限過濾:</label>
+            <ul class="d-inline-block m-0 p-0 list-unstyled">
+                <li class="d-inline m-2">
+                    <label><input type="radio" v-model="Qry.Role" />不限</label>
+                </li>
+                <li v-for="(item,index) in RolesList" class="d-inline m-2">
+                    <label><input type="radio" :value="index" v-model="Qry.Role" />{{item}}</label>
+                </li>
+            </ul>
+        </div><!-- 查詢過濾條件設定 -->
+        @*<pre>{{Qry|json}}</pre>*@
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center" id="ResultTable">
+                <thead>
+                    <tr>
+                        <th>登入帳號</th>
+                        <th>姓名</th>
+                        <th>機構名稱</th>
+                        <th>Email</th>
+                        <th>電話</th>
+                        <th class="w-13">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td class="text-left">
+                            @if (User.HasRole(RoleList.Admin))
+                            {
+                                <a href="javascript:void(0)" @@click="SwitchUser(item)"  aria-label="模擬使用者身份" title="模擬使用者身份"><i aria-label="模擬使用者身份" title="模擬使用者身份" class="fa fa-user-secret text-dark"></i></a>
+                            }
+                            {{item.UserName}}
+                        </td>
+                        <td class="text-left">
+                            {{item.DisplayName}}
+                        </td>
+                        <td class="text-left">
+                            {{item.CompanyName}}
+                        </td>
+                        <td>
+                            {{item.Email}}
+                        </td>
+                        <td>
+                            {{item.PhoneNumber}}
+                        </td>
+                        <td>
+                            @if (User.HasRole(RoleList.Admin))
+                            {
+                                <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index + pageStart);" />
+                                <input type="button" class="btn btn-outline-danger" value="刪除" @@click="Delete(item,index + pageStart);" />
+                            }
+                            @if (User.HasRole(RoleList.Epa))
+                            {
+                                <input type="button" class="btn btn-outline-primary" value="檢視" @@click="View(item,index + pageStart);" />
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <nav aria-label="Page navigation">
+                <ul class="pagination float-right">
+                    <li class="page-item" v-bind:class="{'disabled': (currPage <= 1)}"
+                        @@click.prevent="setPage(1)"><a href="#" class="page-link" title="第一頁">&lt;&lt;</a></li>
+                    <li class="page-item" v-bind:class="{'disabled': (currPage <= 1)}"
+                        @@click.prevent="setPage(currPage-5)"><a href="#" class="page-link" title="上五頁">&lt;</a></li>
+                    <li class="page-item" v-for="n in PageRange"
+                        v-bind:class="{'active': (currPage === (n))}"
+                        @@click.prevent="setPage(n)"><a href="#" class="page-link">{{n}}</a></li>
+                    <li class="page-item" v-bind:class="{'disabled': (currPage >= totalPage)}"
+                        @@click.prevent="setPage(currPage+5)"><a href="#" class="page-link" title="下五頁">&gt;</a></li>
+                    <li class="page-item" v-bind:class="{'disabled': (currPage >= totalPage)}"
+                        @@click.prevent="setPage(totalPage)"><a href="#" class="page-link" title="最後一頁">&gt;&gt;</a></li>
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            共 {{RecList.length}} 筆/ {{totalPage}} 頁
+                        </span>
+                    </li>
+                </ul>
+            </nav>
+        </div><!-- 分頁控制 -->
+        <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">[編輯]{{Rec.UserName}}</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="UserName">登入帳號</label>
+                            <div class="col-sm-10">
+                                <span v-show="Rec.Id">{{Rec.UserName}}</span>
+                                <input type="text" class="form-control" v-model="Rec.UserName" maxlength="250" id="UserName" v-show="!Rec.Id" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="DisplayName">姓名</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" v-model="Rec.DisplayName" maxlength="250" id="DisplayName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="CompanyName">機構名稱</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" v-model="Rec.CompanyName" maxlength="250" id="CompanyName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="Email">Email</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" v-model="Rec.Email" maxlength="250" id="Email" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="PhoneNumber">聯絡電話</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" v-model="Rec.PhoneNumber" maxlength="250" id="PhoneNumber" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label">權限設定</label>
+                            <div class="col-sm-10">
+                                <ul class="d-inline-block m-0 p-0 list-unstyled">
+                                    <li v-for="(item,index) in RolesList" class="d-inline-block m-2">
+                                        <label><input type="checkbox" :value="index" v-model="Rec.Roles" />{{item}}</label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @@click="Save(Rec);">存檔</button>
+                        <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- 編輯框 -->
+        <div id="ViewDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">[檢視]{{Rec.UserName}}</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="UserName">登入帳號</label>
+                            <div class="col-sm-10">
+                                <span>{{Rec.UserName}}</span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="DisplayName">姓名</label>
+                            <div class="col-sm-10">
+                                <span>{{Rec.DisplayName}}</span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="CompanyName">機構名稱</label>
+                            <div class="col-sm-10">
+                                <span>{{Rec.CompanyName}}</span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="Email">Email</label>
+                            <div class="col-sm-10">
+                                <span>{{Rec.Email}}</span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label" for="PhoneNumber">聯絡電話</label>
+                            <div class="col-sm-10">
+                                <span>{{Rec.PhoneNumber}}</span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label">擁有權限</label>
+                            <div class="col-sm-10">
+                                <ul class="d-inline-block m-0 p-0 list-unstyled">
+                                    <li v-for="(item,index) in RolesList" class="d-inline-block m-2">
+                                        <label><input type="checkbox" :value="index" v-model="Rec.Roles" onclick="return false;"/>{{item}}</label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-warning" data-dismiss="modal">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- 檢視框 -->
+    </div>
+
+@section Scripts{
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                countOfPage: 10,
+                currPage: 1,
+                RecList: [],
+                Rec: {},
+                Qry: {},
+                RolesList : @Html.Raw(Json.Serialize(Model.MemberRoleCode)) ,
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                }
+            },
+            computed: {
+                pageStart: function () {
+                    return (this.currPage - 1) * this.countOfPage;
+                },
+                totalPage: function () {
+                    return Math.ceil(this.RecList.length / this.countOfPage);
+                },
+                PageRange: function () {
+                    var PR = [this.currPage];
+                    for (var i = 1; i <= 5; i++ ) {
+                        var p = this.currPage - i;
+                        if (p > 0 && p <= this.totalPage) PR.unshift(p);
+                        if (PR.length >= 5) break;
+                        var p = this.currPage + i;
+                        if (p > 0 && p <= this.totalPage) PR.push(p);
+                        if (PR.length >= 5) break;
+                    }
+                    if (PR[0] > 1) PR.unshift('..');
+                    if (PR[PR.length-1] < this.totalPage) PR.push('..');
+                    return PR;
+                }
+            },
+            methods: {
+                setPage: function (idx) {
+                    if (isNaN(parseInt(idx))) return;
+                    if (idx <= 0) {
+                        this.currPage = 1;
+                        return;
+                    }
+                    if (idx > this.totalPage) {
+                        this.currPage = this.totalPage;
+                        return;
+                    }
+                    this.currPage = idx;
+                },
+                GetList: function (Qry) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Action("GetList","AccountMgr")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+                View: function (item , index ) {
+                    var me = this;
+                    me.Rec = item|| { Roles:[] };
+                    $('#ViewDialog').modal("show");
+                    if (!me.Rec.Uid) return;
+                    me.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Action("GetItem","AccountMgr")",
+                        data: me.Rec ,
+                        success: function (_Result) {
+                            me.Rec = _Result;
+                            me.Rec.EditIndex = index;
+                        }
+                    });
+                },
+                Edit: function (item , index ) {
+                    var me = this;
+                    me.Rec = item|| { Roles:[] };
+                    $('#ModifyDialog').modal("show");
+                    if (!me.Rec.Uid) return;
+                    me.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Action("GetItem","AccountMgr")",
+                        data: me.Rec ,
+                        success: function (_Result) {
+                            me.Rec = _Result;
+                            me.Rec.EditIndex = index;
+                        }
+                    });
+                },
+                Delete: function (item , index) {
+                    var me = this;
+                    UiHelper.confirm("確定要刪除帳號 " + item.UserName + " ?", function () {
+                        me.$http.post({
+                            ApiDesc: "刪除帳號",
+                            url: "@Url.Action("Delete","AccountMgr")",
+                            data: item,
+                            success: function (_Result) {
+                                me.RecList.splice(index, 1);
+                                UiHelper.alert("帳號 <em>" + item.UserName + "</me> 已刪除!!");
+                            }
+                        });
+                    });
+                },
+                Save: function (Rec) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "資料存檔",
+                        url: "@Url.Action("Save","AccountMgr")",
+                        data: Rec,
+                        success: function (_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+                                me.RecList[me.Rec.EditIndex] = _Result;
+                            } else {
+                                me.RecList.unshift(_Result);
+                            }
+                            me.$forceUpdate();
+                            $('#ModifyDialog').modal("hide");
+                        }
+                    });
+                },
+                SwitchUser: function (Rec) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "切換身份",
+                        url: "@Url.Action("SwitchUser","AccountMgr")",
+                        data: Rec,
+                        success: function (_Result) {
+                            UiHelper.alert(
+                                "目前已切換至 " + Rec.UserName + " 身份，請小心操作!!<br/>" +
+                                "如要回原身份請登出後重新登入" ,
+                                function () {
+                                    location.href = _Result.url;
+                                }
+                            );
+                        }
+                    });
+                }
+            },
+            created: function () {
+                this.GetList(this.Qry);
+            }
+        });
+    </script>
+}
+

@@ -1,0 +1,574 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Profile.SpInfoVueModel
+@using Pvis.Biz.Extension
+@using System.Text.Json
+@using System.Text.Encodings.Web
+@{
+    ViewData["Title"] = "太陽光電板資料維護";
+    var options = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
+    };
+}
+
+<div id="app" v-cloak>
+    <environment include="Development">
+        <pre>{{RecAll|json}}</pre>
+    </environment>
+    <div class="form-inline inline-box">
+        <label for="keyword" class="control-label">關鍵字查詢:</label>
+        <input type="text" class="form-control" id="keyword" v-model="Qry.KeyWord" />
+        <label class="control-label ml-4" for="Pvid">設備登記編號 : </label>
+        <select class="form-control" v-model="Qry.Pvid" id="Pvid">
+            <option v-for="option in PvidOptions" :value="option.Pid">{{option.Pvno}}</option>
+        </select>
+        <label class="control-label ml-4">使用狀態:</label>
+        <label><input type="radio" v-model="Qry.Status" :value="1" />使用中</label>
+        <label><input type="radio" v-model="Qry.Status" :value="0" />廢棄排出</label>
+        <div class="m-auto"></div>
+        <input type="button" value="搜尋" @@click="GetList(Qry,'search')" class="btn btn-outline-success" />
+        <input type="button" value="新增資料" @@click="Edit()" class="btn btn-outline-primary" />
+        @if (User.HasRole(RoleList.Company))
+        {
+            <button class="btn btn-outline-info" @@click="OpenUpload()">多筆資料上傳</button>
+        }
+
+
+    </div>
+
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center">
+            <thead>
+                <tr>
+                    <th>有 無 序 號</th>
+                    <th>太陽光電板序號</th>
+                    <th>模組廠牌</th>
+                    <th>模組型號</th>
+                    <th>外觀鋁框完整度</th>
+                    <th>設備登記編號</th>
+                    <th class="w-10">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in RecList">
+                    <td>{{item.Hasno==1 ? '有序號' : '無序號'}}</td>
+                    <td>{{item.Sno}}</td>
+                    <td>{{item.Brand}}</td>
+                    <td>{{item.Module}}</td>
+                    <td>{{item.AlFrame==1 ? '有鋁框' : '無鋁框'}}</td>
+                    <td>{{ShowPvno(item.Pvid)}}</td>
+                    <td>
+                        <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item);" />
+                        <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(item);" tabindex="-1" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div><!-- 查詢結果 -->
+    <div class="text-left">
+        <button disabled class="btn btn-outline-primary">共 {{TotalDataCount}} 筆 / 第 {{Qry.page}} 頁</button>
+    </div>
+    <div class="text-right">
+        @*<partial name="_PagerRecListPartial" />*@
+        <paginate id="pag"
+                  :page-count="Count"
+                  :page-range="5"
+                  v-if="Change"
+                  :click-handler="clickCallback"
+                  :prev-text="'上一頁'"
+                  :next-text="'下一頁'"
+                  :container-class="'pagination'"
+                  :page-class="'page-item'"
+                  :page-link-class="'page-link'"
+                  :prev-class="'page-item'"
+                  :next-class="'page-item'"
+                  :prev-link-class="'page-link'"
+                  :next-link-class="'page-link'"
+                  :initial-page="1"
+                  :active-class="'active'">
+        </paginate>
+        <div class="" v-else>
+            讀取中...
+        </div>
+
+
+    </div><!-- 分頁控制 -->
+    <div id="UploadModal" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">批次滙入資料</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    @if (User.HasRole(RoleList.Company))
+                    {
+                        <form asp-antiforgery="true" id="UploadData" method="post" enctype="multipart/form-data">
+                            <div class="form-group row">
+                                <div class="col-md-4"></div>
+                                <div class="col-md-4">
+                                    <a class="btn btn-outline-primary" href="~/Excel/滙入格式Excel.xlsx">下載Excel格式檔案</a>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-md-4 col-form-label" style="text-align:right;" for="Pvids">選擇設備:</label>
+                                <div class="col-md-4">
+                                    <select id="Pvids" name="Pvid" class="form-control">
+                                        <option value="0">請選擇</option>
+                                        @foreach (var item in Model.PvInofos)
+                                        {
+                                            if (item.Key == Model.Pvid.ToString())
+                                            {
+                                                <option selected value="@item.Key">@item.Value</option>
+                                                continue;
+                                            }
+                                            <option value="@item.Key">@item.Value</option>
+                                        }
+                                    </select>
+                                </div>
+
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-md-4 col-form-label" style="text-align:right;" for="Upload">選擇檔案:</label>
+                                <div class="col-md-4">
+                                    <input class="form-control" type="file" id="upload" name="Upload" asp-for="Upload" accept="application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                                </div>
+
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-4"></div>
+                                <div class="col-md-4">
+                                    <input id="UploadBtn" class="btn btn-outline-info col-md-8" type="submit" value="送出" />
+                                </div>
+
+                            </div>
+
+
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]{{Rec.Sno}}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">有無序號(無序號則自行編號)</label>
+                        <div class="col-md-8">
+                            <div class="form-check-inline">
+                                <input type="radio" v-model="Rec.Hasno" value="1" /><label>有</label>
+                                <input type="radio" v-model="Rec.Hasno" value="0" /><label>無</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row" v-if="!Rec.Pid">
+                        <label class="col-md-4 col-form-label">太陽光電板序號</label>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" v-model="Rec.Sno" maxlength="50" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">模 組 廠 牌</label>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" v-model="Rec.Brand" maxlength="50" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">模 組 型 號</label>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" v-model="Rec.Module" maxlength="50" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">模 組 樣 態</label>
+                        <div class="col-md-8">
+                            <div class="form-check-inline">
+                                <input type="radio" v-model="Rec.Style" value="1" /><label>矽晶單片玻璃</label>
+                                <input type="radio" v-model="Rec.Style" value="2" /><label>矽晶雙片玻璃</label>
+                                <input type="radio" v-model="Rec.Style" value="3" /><label>薄膜型</label>
+                                <input type="radio" v-model="Rec.Style" value="9" /><label>其他</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">樣 態 說 明</label>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" v-model="Rec.StyleDesc" maxlength="10" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">重 量 (KG)</label>
+                        <div class="col-md-8">
+                            <input type="number" class="form-control" v-model="Rec.Spweight" maxlength="5" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">設備登記編號 </label>
+                        <div class="col-md-8">
+                            <select class="form-control" v-model="Rec.Pvid">
+                                <option value="">請選擇</option>
+                                <option v-for="option in PvidOptions" :value="option.Pid">{{option.Pvno}}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">出 貨 單 號</label>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" v-model="Rec.Shipno" maxlength="50" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">備註(無序號者，須備註說明)</label>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" v-model="Rec.Memo" maxlength="100" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">使用狀態</label>
+                        <div class="col-md-8">
+                            <div class="form-check-inline">
+                                <input type="radio" v-model="Rec.Status" value="1" /><label>使用中</label>
+                                <input type="radio" v-model="Rec.Status" value="0" /><label>廢棄排出</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 col-form-label">外觀鋁框完整度</label>
+                        <div class="col-md-8">
+                            <div class="form-check-inline">
+                                <input type="radio" v-model="Rec.AlFrame" value="1" /><label>有鋁框</label>
+                                <input type="radio" v-model="Rec.AlFrame" value="0" /><label>無鋁框</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row" v-show="AttList && AttList.length > 0 ">
+                        <label for="atlist" class="col-md-4 col-form-label">附件</label>
+                        <div class="col-md-8">
+                            <ul class="m-0 p-0">
+                                <li v-for="(item,index) in AttList">
+                                    <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-4 control-label" for="UserSpInfoDoc">附件上傳</label>
+                        <div class="col-md-8">
+                            <input type="file" accept=".pdf" class="form-control-file" id="UserSpInfoDoc" @@change="FileUpLoadChange($event,Attached.UserSpInfoDoc,'太陽光電板附件')" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <span class="text-info" v-if="Rec.ReviewStatus">審查已確認通過</span>
+                    <button type="button" class="btn btn-primary" @@click="Save(Rec,Attached,ln=AttList.length);" v-else>存檔</button>
+                    <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                </div>
+                <environment include="Development">
+                    <pre>{{RecAll|json}}</pre>
+                    <pre>{{AttList|json}}</pre>
+                </environment>
+            </div>
+        </div>
+    </div><!-- 編輯框 -->
+</div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/NewJs/index.js"></script>
+    @if (ViewData["result"] != null)
+    {
+        <script>
+    alert("@ViewData["result"]");
+        </script>
+    }
+
+    <script>
+    Vue.component("paginate", VuejsPaginate);
+
+     var app = new Vue({
+         el: '#app',
+/*         mixins: [MixinPagerRecList],*/
+         data: {
+             RecList: [],
+             AttList: [],
+             Attached: {
+                 UserSpInfoDoc: { HasFile: false }
+             },
+             Rec: {},
+             RecAll: {
+                 Count:0
+             },
+             Qry: {
+                 page: 1
+             },
+             PvidOptions: [],
+             FlatPickrCfg: {
+                 altInput: false,
+                 allowInput: true,
+                 minuteIncrement: 10
+             },
+             AllPvInofos: @Html.Raw(JsonSerializer.Serialize(Model.PvInofos,options)),
+             SearchId:"@Model.Pvid",
+             SelectId: "",
+             Count: 0,
+             Change: true,
+             TotalDataCount:0
+         },
+         methods: {
+             clickCallback: function (page) {
+                 this.Qry.page = page
+                 this.GetList(this.Qry);
+             },
+             Search: function () {
+                 var self = this;
+                 self.SelectId = getKeyByValue(self.AllPvInofos, self.SearchId);
+             },
+             GetPvidOptions: function () {
+                 var me = this;
+                 this.$http.post({
+                     ApiDesc: "取得設備登記編號",
+                     url: "@Url.Action("GetUserPvidOptions","UserPvInfo")",
+                     data: {},
+                     success: function (_Result) {
+                         me.PvidOptions = _Result;
+                         return;
+                     }
+                 });
+             },
+             OpenUpload: function(){
+                 $('#UploadModal').modal("show");
+             },
+             Edit: function (item) {
+                 var me = this;
+                 me.Rec = item || {
+                     Uid: "0",
+                     Createdate:"2019-8-8",
+                     Pvid:"0",
+                     Status: "1",
+                     Sbid: "0",
+                     AttList: []
+                 };
+
+                 $('#ModifyDialog').modal("show");
+                 if (!this.Rec.Pid) return;
+                 this.$http.post({
+                     ApiDesc: "單筆資料載入",
+                     url: "@Url.Content("~/api/UserSpInfo/GetItem")",
+                     data: {
+                         Pid: this.Rec.Pid
+                     },
+                     success: function (_Result) {
+                         me.Rec = _Result.Rec;
+                         me.AttList = _Result.AttList;
+                     }
+                 });
+             },
+             @*Load: function () {
+                                         var me = this;
+                                         this.$http.post({
+                                             ApiDesc: "資料載入",
+                                             url: "@Url.Action("Load","UserSpInfo")",
+                                             data: {},
+                                             success: function (_Result) {
+                                                 me.RecList = _Result;
+                                                 return;
+
+                                                 if (_Result.IsSuccess === false) {
+                                                     UiHelper.ShowErr(_Result.Msg);
+                                                     return;
+                                                 }
+                                                 UiHelper.ShowMsg(_Result.Msg);
+                                                 me.RecList = _Result.RecList;
+                                             }
+                                         });
+                                     },*@
+             GetList: function (Qry,first) {
+                 var me = this;
+
+                 if (first) {
+                     me.Change = false;
+                     Qry.page = 1;
+                 }
+
+                 this.$http.post({
+                     ApiDesc: "資料查詢",
+                     url: "@Url.Action("GetList","UserSpInfo")",
+                     data: Qry,
+                     success: function (_Result) {
+                         me.RecList = _Result.Data;
+                         me.Count = _Result.Count;
+                         me.TotalDataCount = _Result.TotalDataCount;
+                         me.Change = true;
+                     }
+                 });
+             },
+             Delete: function (item) {
+                 var me = this;
+                 UiHelper.confirm("確定要刪除這筆資料!?", function () {
+                     me.$http.post({
+                         ApiDesc: "資料刪除",
+                         url: "@Url.Action("Delete","UserSpInfo")",
+                         data: item,
+                         success: function () {
+                             UiHelper.ShowMsg("資料已刪除。");
+                             me.GetList(me.Qry, true);
+                         }
+                     });
+                 });
+             },
+
+             FileUpLoadChange: function (e, att, describe) {
+                 var me = this;
+                 att.HasFile = false;
+                 delete att.f;
+                 var files = e.target.files || e.dataTransfer.files;
+                 if (!files.length) return;
+                 UiHelper.GetFile(files[0], function (f) {
+                     var _Err = [];
+                     if (!(/\.pdf$/i).test(f.name)) _Err.push(describe + "只能上傳Pdf格式檔案");
+                     if (f.size / (1024 * 1024) > 10) _Err.push(describe + "檔案不能超過10MB");
+                     if (_Err.length > 0) {
+                         UiHelper.alert("<ul><li>" + _Err.join("</li><li>") + "</li>");
+                         return;
+                     }
+                     me.IsShowUpLoadBtn = (_Err.length <= 0);
+                     att.HasFile = true;
+                     att.f = f;
+                 });
+             },
+
+             /**
+              * 基本表單前端資料檢核
+              * @@param { any } Rec 主要申請資料表
+              * @@param { any } Att 相關附件
+              * @@returns { Array } 錯誤明細清單
+              */
+             FormCheck: function (Rec, Att, ln) {
+
+                 var me = this;
+
+                 var errors = [];
+
+                 Attachment = {};
+
+                 //if (Rec.Pvid=='') errors.push("『設備登記』未填寫");
+
+                 if (!Rec.Hasno) errors.push("『有無太陽光電板序號』未填寫");
+
+                 if (!Rec.Sno) errors.push("『太陽光電板序號』未填寫，若無則自訂");
+
+                 if (!Rec.Brand)  errors.push("『廠牌』未填寫");
+
+                 if (!Rec.Style) errors.push("『樣態』未填寫");
+
+                 if (!Rec.AlFrame) errors.push("『外觀鋁框完整度』未填寫");
+
+                 if (Rec.Style=='9' && !Rec.StyleDesc) errors.push("『樣態為其他』樣態說明未填寫");
+
+                 if (!Rec.Spweight) errors.push("『重量』未填寫");
+
+                 if (isNaN(Rec.Spweight)) errors.push("『重量』合理數值應為0.1~99數字");
+
+                 //if (Rec.Hasno=='0' && !Att.UserSpInfoDoc.HasFile && ln == 0) {
+                 //    errors.push("『無太陽光電板序號』太陽光電板附件未提供");
+                 //} else {
+                     Attachment["@eItemType.None.ToString()"] = Att.UserSpInfoDoc.f;
+                 //}
+                 return errors;
+
+             } ,
+             /**
+              * 案件送出
+              * @@param { any } Rec 主要申請資料表
+              * @@param { any } Att 相關附件
+              */
+             Save: function ( Rec, Att, ln ) {
+                 var me = this;
+                 Rec.Sno = Rec.Sno.toUpperCase();
+                 var errors = me.FormCheck(Rec,Att,ln);
+
+                 if (errors.length) {
+                     UiHelper.ClearMsg().ShowErr(errors, 6000);
+                     return;
+                 }
+                 RecAll = {'Rec':Rec,'Attachment':Attachment}
+                 me.$http.post({
+                     ApiDesc: "儲存太陽光電板資料",
+                     url: "@Url.Action("Save","UserSpInfo")",
+                     data: RecAll,
+                     success: function (_Result) {
+                         me.GetList(me.Qry);
+                         $('#ModifyDialog').modal("hide");
+                         //if (me.Rec.hasOwnProperty('EditIndex')) {
+
+                         //    me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                         //} else {
+                         //    me.RecList.unshift(_Result.Rec);
+                         //}
+                         //me.$forceUpdate();
+                         //$('#ModifyDialog').modal("hide");
+                     }
+                 });
+             },
+             ShowPvno: function (Dat) {
+                 if (!Dat) return;
+                 var _Pvno = '';
+                 this.PvidOptions.map(function (item) {
+                     if (Dat == item.Pid) _Pvno = item.Pvno;
+                 });
+                 return _Pvno;
+             },
+         },
+         created: function () {
+             this.GetList(this.Qry);
+             this.GetPvidOptions();
+
+         }
+     });
+     function getKeyByValue(object, value) {
+         return Object.keys(object).find(key => object[key].startsWith(value));
+    }
+    $("#UploadBtn").click(function () {
+        $("#UploadBtn").attr('disabled', true);
+        UiHelper.blockUI("資料滙入中.......");
+        if ($("#Pvids").val() == "0") {
+            UiHelper.unblockUI();
+            UiHelper.ShowErr("尚未選擇設備");
+
+            $("#UploadBtn").attr('disabled', false);
+            return false;
+        }
+        if (!$("#upload").get(0).files[0]) {
+            UiHelper.unblockUI();
+            UiHelper.ShowErr("尚未選擇檔案");
+            $("#UploadBtn").attr('disabled', false);
+            return false;
+        }
+        $('#UploadData').submit();
+    })
+    //$('#UploadData').submit(function () {
+
+    //    return true; // return false to cancel form action
+    //});
+    </script>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <script>
+            UiHelper.ShowErr("@Html.Raw(Model.ErrorMessage)");
+        </script>
+    }
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true;
+        </script>
+    </environment>
+}

@@ -1,0 +1,20 @@
+﻿<nav aria-label="Page navigation">
+    <ul class="pagination float-right">
+        <li class="page-item" v-bind:class="{'disabled': (currViewPage <= 1)}"
+            @@click.prevent="setViewPage(1)"><a href="#" class="page-link" title="第一頁">&lt;&lt;</a></li>
+        <li class="page-item" v-bind:class="{'disabled': (currViewPage <= 1)}"
+            @@click.prevent="setViewPage(currViewPage-5)"><a href="#" class="page-link" title="上五頁">&lt;</a></li>
+        <li class="page-item" v-for="n in PageViewRange"
+            v-bind:class="{'active': (currViewPage === (n))}"
+            @@click.prevent="setViewPage(n)"><a href="#" class="page-link">{{n}}</a></li>
+        <li class="page-item" v-bind:class="{'disabled': (currViewPage >= totalViewPage)}"
+            @@click.prevent="setViewPage(currViewPage+5)"><a href="#" class="page-link" title="下五頁">&gt;</a></li>
+        <li class="page-item" v-bind:class="{'disabled': (currViewPage >= totalViewPage)}"
+            @@click.prevent="setViewPage(totalViewPage)"><a href="#" class="page-link" title="最後一頁">&gt;&gt;</a></li>
+        <li class="page-item disabled">
+            <span class="page-link">
+                共 {{RecSchSBList.length}} 筆/ {{totalViewPage}} 頁
+            </span>
+        </li>
+    </ul>
+</nav>

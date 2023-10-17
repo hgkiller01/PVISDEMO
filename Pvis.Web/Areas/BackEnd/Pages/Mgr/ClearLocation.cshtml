@@ -1,0 +1,170 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Mgr.ClearLocationModel
+@{
+    ViewData["Title"] = "自行清運地點";
+}
+@section heads{
+    <link rel="stylesheet" href="//unpkg.com/@@trevoreyre/autocomplete-vue/dist/style.css" />
+}
+
+<div id="app" v-cloak>
+    <div class="form-inline inline-box">
+        <label for="keyword" class="control-label">關鍵字查詢：</label>
+        <input type="text" class="form-control" id="keyword" v-model="Qry.KeyWord" />
+        <label class="control-label ml-4">狀態：</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="1" />啟用</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="0" />停用</label>
+        <div class="m-auto"></div>
+        <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        <input type="button" value="新增資料" @@click="Edit()" class="btn btn-outline-primary" />
+    </div>
+    <!-- 查詢結果 -->
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center">
+            <thead>
+                <tr>
+                    <th>名稱</th>
+                    <th>地址</th>
+                    <th>聯絡電話</th>
+                    <th class="w-4">狀態</th>
+                    <th class="w-10">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item, index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{item.Name}}</td>
+                    <td>{{item.Addr}}</td>
+                    <td>{{item.Tel}}</td>
+                    <td>{{item.Status ? '啟用' : '停用'}}</td>
+                    <td>
+                        <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item, index + pageStart);" />
+                        <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(index + pageStart);" tabindex="-1" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- 分頁控制 -->
+    <div class="text-right">
+        <partial name="_PagerRecListPartial" />
+    </div>
+    <!-- 編輯框 -->
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]{{Rec.Name}}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label">名稱</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="Rec.Name" maxlength="100" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label">地址</label>
+                        <div class="col-md-9">
+                            <input v-if="Rec.Addr" type="text" class="form-control" v-model="Rec.Addr" value="{{Rec.Addr}}" readonly />
+                            <autocomplete :default-value="Rec.Addr" :search="search" placeholder="請輸入完整地址" @@change="handleInput($event,Rec,'Addr')"></autocomplete>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label">聯絡電話</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="Rec.Tel" maxlength="20" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label">狀態</label>
+                        <div class="col-md-9">
+                            <div class="form-check-inline">
+                                <label><input type="radio" v-model="Rec.Status" value="true" />啟用</label>
+                                <label><input type="radio" v-model="Rec.Status" value="false" />停用</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @@click="Save(Rec);">存檔</button>
+                    <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="//unpkg.com/@@trevoreyre/autocomplete-vue"></script>
+    <script src="~/js/MixinAutocomplete.js"></script>
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinAutocomplete, MixinPagerRecList],
+            data: {
+                Towns: @Html.Raw(Json.Serialize(Model.Towns)),
+                RecList: [],
+                Rec: {},
+                Qry: {}
+            },
+            methods: {
+                Edit: function(item, index) {
+                    this.Rec = item || {
+                        Name: '',
+                        Addr: '',
+                        Tel: ''
+                    };
+                    this.Rec.EditIndex = index;
+                    $('#ModifyDialog').modal('show');
+                },
+                GetList: function(Qry) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: '資料查詢',
+                        url: '@Url.Action("GetList", "ClearLocation")',
+                        data: Qry,
+                        success: function(_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+                Delete: function(index) {
+                    var me = this;
+                    UiHelper.confirm('確定要刪除這筆資料!?', function() {
+                        me.$http.post({
+                            ApiDesc: '資料刪除',
+                            url: '@Url.Action("Delete", "ClearLocation")',
+                            data: me.RecList[index],
+                            success: function(_Result) {
+                                UiHelper.ShowMsg('資料已刪除');
+                                me.RecList.splice(index, 1);
+                            }
+                        });
+                    });
+                },
+                Save: function(Rec) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: '資料存檔',
+                        url: '@Url.Action("Save", "ClearLocation")',
+                        data: Rec,
+                        success: function(_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+                                me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                            } else {
+                                me.RecList.unshift(_Result.Rec);
+                            }
+                            me.$forceUpdate();
+                            $('#ModifyDialog').modal("hide");
+                        }
+                    });
+                }
+            },
+            created: function() {
+                this.GetList(this.Qry);
+            }
+        });
+    </script>
+}

@@ -1,0 +1,147 @@
+﻿@page
+@model Pvis.Web.Pages.ContactUsModel
+@{
+    ViewData["Title"] = "諮詢信箱";
+}
+@section heads{
+    @*<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/css/alertify.min.css" />
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/css/themes/bootstrap.min.css" />*@
+    <link href="~/css/alertify.min.css" rel="stylesheet" />
+    <link href="~/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        .req {
+            color: crimson;
+        }
+    </style>
+}
+<form asp-antiforgery="true" class="container" id="AppForm">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="UserName">姓名<span class="req">*必填</span></label>
+                <input type="text" aria-role="alert" class="form-control" ref="UserName" id="UserName" placeholder="請輸入您的大名" v-model="Rec.UserName" maxlength="20">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="Tel">電話<span class="req">*必填</span></label>
+                <input type="text" aria-role="alert" class="form-control" ref="Tel" id="Tel" placeholder="請輸入聯絡電話" v-model="Rec.Tel" maxlength="20">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="Email">Email<span class="req">*必填</span></label>
+                <input type="text" aria-role="alert" class="form-control" ref="Email" id="Email" placeholder="user@example.com" v-model="Rec.Email" maxlength="120">
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="Subject">主旨<span class="req">*必填 至少5個字</span></label>
+        <input type="text" aria-role="alert" class="form-control" ref="Subject" id="Subject" placeholder="請輸入問題主旨" v-model="Rec.Subject" maxlength="200">
+    </div>
+    <div class="form-group">
+        <label for="Body">問題內容</label><span class="req">*必填 至少15個字</span>
+        <textarea aria-role="alert" class="form-control" ref="Body" id="Body" style="min-height: 10em;" placeholder="內容描述建議不要超過3000個中文字" v-model="Rec.Body" maxlength="3000"></textarea>
+        <div class="text-end" v-show="Rec.Body.length" style="color: #999;">
+            剩餘字數:{{Quota}}
+        </div>
+    </div>
+    <div class="text-end">
+        <label class="form-control-label d-md-inline-block" for="Captcha">圖形驗證碼<span class="req">*必填</span></label>
+        <a href="javascript:void(0)" @@keypress.prevent="ReNewCaptcha" title="更換驗證碼">
+            <img :src="CaptchaUrl" alt="驗證碼圖檔" @@click="ReNewCaptcha" style="margin:0 0.2rem;" />
+        </a>
+        <a alt="播放驗證碼" href="javascript:void(0)" title="播放驗證碼" @@click.prevent="VoicePlay()" @@keypress.prevent="VoicePlay()">
+            <img alt="播放驗證碼" src="~/img/play.png" />
+        </a>
+        <input type="text" id="Captcha" aria-role="alert" ref="Captcha" class="form-control form-control-lg d-md-inline-block text-center" placeholder="驗證碼" style="width: 7rem;" v-model="Rec.Captcha" maxlength="4">
+        <input type="button" class="btn btn-lg btn-primary" value="送出資料" @@click="SendMsg(Rec);">
+    </div>
+    <div class="text-warning text-end">
+        <span>來源IP:@HttpContext.Connection.RemoteIpAddress.ToString()</span>，
+        請輸入您圖形看到的文字，若無法辨識驗證碼，點擊圖形可重新產生驗證碼。
+    </div>
+</form>
+@section Scripts{
+    <script src="~/NewJs/vue.min.js"></script>
+    <script src="~/NewJs/es6-promise.auto.min.js"></script>
+    <script src="~/NewJs/axios.min.js"></script>
+    <script src="~/NewJs/alertify.min.js"></script>
+    <script src="~/NewJs/moment.min.js"></script>
+    <script src="~/NewJs/jquery.blockUI.js"></script>
+    @*<script src="//cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/es6-promise@4.2.6/dist/es6-promise.auto.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/axios@0.18.0/dist/axios.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/alertify.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/block-ui@2.70.1/jquery.blockUI.js"></script>*@
+    <script src="~/js/VueInit.js" asp-append-version="true"></script>
+    <script>
+        var app = new Vue({
+            el: '#AppForm',
+            data: {
+                Rec: {
+                    Body : ""
+                },
+                CaptchaUrl : "@Url.Action("Get", "Captcha", new { width = 160 , height = 48})"
+            },
+            computed: {
+                Quota: function () {
+                    return 3000 - this.Rec.Body.length;
+                }
+            },
+            methods: {
+                ReNewCaptcha: function () {
+                    this.CaptchaUrl = this.CaptchaUrl.split('?')[0] + '?' + Math.random();
+                },
+                VoicePlay: function () {
+                    var audio = new Audio("@Url.Action("GetWave", "Captcha")?" + Math.random());
+                    audio.play();
+                },
+                SendMsg: function (Rec) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "送出申請資料",
+                        url: "@Url.Action("Post", "ContactUs")",
+                        data: Rec,
+                        success: function (_Result) {
+                            me.Rec = { Body: "" };
+                            UiHelper.alert("資料已送出");
+                        },
+                        fail: function (e) {
+                            var data = e.response.data.errors;
+                            me.ReNewCaptcha();
+                            me.Rec.CaptchaCode = "";
+                            if (!me.Rec.UserName) {
+                                me.$refs.UserName.focus();
+                                return;
+                            }
+                            if (!me.Rec.Tel) {
+                                me.$refs.Tel.focus();
+                                return;
+                            }
+                            if (!me.Rec.Email) {
+                                me.$refs.Email.focus();
+                                return;
+                            }
+                            if (!me.Rec.Subject || (me.Rec.Subject.length < 5)) {
+                                me.$refs.Subject.focus();
+                                return;
+                            }
+                            if (!me.Rec.Body || (me.Rec.Body.length < 15)) {
+                                me.$refs.Body.focus();
+                                return;
+                            }
+                            if (!me.Rec.Captcha || data[0] == "驗證碼輸入錯誤") {
+                                me.$refs.Captcha.focus();
+                                return;
+                            }
+                        }
+                    });
+
+                }
+            }
+        });
+    </script>
+}
+

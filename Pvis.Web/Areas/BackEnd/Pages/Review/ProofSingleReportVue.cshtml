@@ -1,0 +1,280 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Review.ProofSingleReportVueModel
+@{
+}
+<style>
+    @@media print {
+        #printButton {
+            display: none;
+        }
+    }
+    table.table-bordered, tr, th, td, tbody, thead,
+    tbody [rowspan],
+    tbody [rowspan] ~ th,
+    tbody [rowspan] ~ td,
+    tbody [colspan] ~ th,
+    tbody [colspan] ~ td,
+    tbody > td,
+    tbody > tr,
+    table.table-bordered td,
+    table.table-bordered th {
+        border: 2px solid !important;
+        border-color: black !important;
+    }
+</style>
+<div id="app" v-cloak>
+    <input id="printButton" type="button" style="margin-bottom:10px;" class="btn btn-outline-primary" value="列印" onclick="printMe();" />
+    <div style="page-break-after:always;">
+        <h5>清除稽核證明</h5>
+        <table class="table table-bordered table-hover table-striped">
+            <tr>
+                <td colspan="4">
+                    證明單編號：@ViewData["ProofNo"]?.ToString()
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">證明單產出日期：{{CleanSingle.OutPutDate|formatDate }}</td>
+            </tr>
+            <tr>
+                <td>清除機構名稱</td>
+                <td colspan="3">{{CleanSingle.Cle_Name}}</td>
+            </tr>
+            <tr>
+                <td>核發年月</td>
+                <td colspan="3">{{GetYear(CleanSingle.Year)}}{{CleanSingle.Month}}月</td>
+            </tr>
+            <tr>
+                <td>案場排出申請登記編號</td>
+                <td>
+                    總重(廢PV+包裝材重量)
+                    (kg)
+                </td>
+                <td>空車重 (kg)</td>
+                <td>片數</td>
+            </tr>
+            <!--案場排出-->
+            <tr v-for="item in CleanSingle.SubDatas">
+                <td>{{item.Bookingno}}</td>
+                <td>{{item.PvWeight}}</td>
+                <td>{{item.CarWeight}}</td>
+                <td>{{item.PvCount}}</td>
+            </tr>
+            <!--End-->
+            <!--合計-->
+            <tr>
+                <td>合計</td>
+                <td>{{TotalPvWeight}}</td>
+                <td>{{TotalCarWeight}}</td>
+                <td>{{TotalPvCount}}</td>
+            </tr>
+            <!--End-->
+            <tr>
+                <td style="height:150px;" colspan="4">
+                    備註說明：<br />
+                    {{CleanSingle.CleDesc}}
+                </td>
+            </tr>
+            <tr>
+                <td style="height:150px;" colspan="4">稽核單位印鑑：</td>
+            </tr>
+            <tr>
+                <td colspan="3"></td>
+                <td>列印日期：@DateTime.Today.ToString("yyyy/MM/dd")</td>
+            </tr>
+        </table>
+    </div>
+    <br />
+    <br />
+    <div style="page-break-after:always;">
+        <h5>{{RoleKind}}稽核證明</h5>
+        <table class="table table-bordered table-hover table-striped">
+            <tr>
+                <td colspan="2">
+                    證明單編號：@ViewData["ProofNo"]?.ToString()
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    證明單產出日期：{{Audit.OutPutDate | formatDate}}
+                </td>
+            </tr>
+            <tr>
+                <td>機構名稱</td>
+                <td>{{Audit.CompanyName}}</td>
+            </tr>
+            <tr>
+                <td>核發年月</td>
+                <td>{{GetYear(Audit.Year)}}{{Audit.Month}}月</td>
+            </tr>
+            <tr style="text-align:center;">
+                <td>案場排出申請登記編號</td>
+                <td>稽核處理量</td>
+            </tr>
+            <tr style="text-align:center;" v-for="item in Audit.auditSubData">
+                <td>{{item.Bookingno}}</td>
+                <td>
+                    ※有鋁框<br />
+                    {{'有序號：' + item.AL_O_SN_O + '片;' + '無序號：' + item.AL_O_SN_X + '片;' + '序號不符：' + item.AL_O_SN_N + '片'}}<br />
+                    ※無鋁框<br />
+                    {{'有序號：' + item.AL_X_SN_O + '片;' + '無序號：' + item.AL_X_SN_X + '片;' + '序號不符：' + item.AL_X_SN_N + '片'}}<br />
+                    總重:{{item.PvTotalWeight + ' KG'}}
+                </td>
+            </tr>
+            <tr>
+                <td style="height:150px;" colspan="2">
+                    備註說明：<br />
+                    {{Audit.OtherDesc}}
+                </td>
+            </tr>
+            <tr>
+                <td style="height:150px;" colspan="2">稽核單位印鑑：</td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <div class="row">
+                        <div class="col-10"></div>
+                        <div class="col-2">
+                            列印日期：@DateTime.Today.ToString("yyyy/MM/dd")
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div v-for="item in PvData" style="page-break-after:always">
+        <h5>案場排出允收稽核證明:</h5>
+        <table class="table table-hover table-bordered table-striped">
+            <tr>
+                <td>
+                    案場名稱：
+                </td>
+                <td colspan="2">{{item.CaseName}}</td>
+                <td>
+                    案場排出申請編號：
+                </td>
+                <td colspan="2">{{item.BookingNo}}</td>
+            </tr>
+            <tr>
+                <td>清除機構名稱：</td>
+                <td colspan="2">{{item.CleanName}}</td>
+                <td>清除日期：</td>
+                <td colspan="2">{{item.Cle_Date | formatDate}}</td>
+            </tr>
+            <tr>
+                <td>處理機構名稱：</td>
+                <td colspan="2">{{item.AuditName}}</td>
+                <td>完成處理日期：</td>
+                <td colspan="2">{{item.CompleteDate | formatDate}}</td>
+            </tr>
+            <tr>
+                <td>設備登記編號</td>
+                <td>登記總片數</td>
+                <td>本次處理量 (片)</td>
+                <td>有鋁框(片)</td>
+                <td>無鋁框(片)</td>
+                <td>尚未排出(片)</td>
+            </tr>
+            <tr>
+                <td>{{item.Pvno}}</td>
+                <td>{{item.SpQty}}</td>
+                <td>{{item.NowQty}}</td>
+                <td>{{item.Haveframe}}</td>
+                <td>{{item.NoFrame}}</td>
+                <td>{{item.SpQty-item.NowQty}}</td>
+            </tr>
+            <tr>
+                <td style="height:150px;" colspan="6">
+                    其他說明：<br />
+                    允收稽核結果詳如附件<br />
+                    {{item.PreDesc}}
+                </td>
+            </tr>
+            <tr>
+                <td style="height:150px;" colspan="6">稽核單位印鑑：</td>
+            </tr>
+            <tr>
+                <td colspan="6" style="text-align:left;">中華民國 @(DateTime.Today.Year - 1911 )  年  @DateTime.Today.Month 月 @DateTime.Today.Day 日</td>
+            </tr>
+        </table>
+    </div>
+</div>
+@section Scripts{
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>
+    </environment>
+    <script>
+        function printMe() {
+            window.print()
+        }
+    var app = new Vue({
+        el: "#app",
+        data: {
+            CleanSingle: {},
+            Audit: {},
+            PvData: [],
+            TotalPvWeight: 0,
+            TotalCarWeight: 0,
+            TotalPvCount: 0,
+            RoleKind: ""
+        },
+        methods: {
+            GetYear: function (item) {
+                if (item)
+                    return item + "年";
+            },
+            GetData: function () {
+                var self = this;
+                self.$http.post({
+                    ApiDesc: "清除稽核",
+                    url: "@Url.Content("~/api/ProofSingle/GetData")",
+                    data: {
+                        Id: "@ViewData["Aud_Sch_No"]?.ToString()"
+                        , ProofNo: "@ViewData["ProofNo"]?.ToString()"
+                    },
+                    success: function (result) {
+                        self.CleanSingle = result.cleViewData;
+                        self.TotalPvWeight = self.TotalWeight("PvWeight");
+                        self.TotalPvWeight = self.TotalWeight('PvWeight');
+                        self.TotalCarWeight = self.TotalWeight('CarWeight');
+                        self.TotalPvCount = self.TotalWeight('PvCount');
+                        self.Audit = result.auditData;
+                        self.PvData = result.userPvData;
+                        self.RoleList();
+                        
+                    }
+                })
+            },
+            TotalWeight: function (Kind) {
+                var self = this;
+                var sum = 0;
+                self.CleanSingle.SubDatas.forEach(function (element) {
+                    sum += element[Kind];
+                });
+                return sum;
+            },
+            RoleList: function () {
+                var self = this;
+                switch (self.Audit.CompanyRole) {
+                    case 32:
+                        self.RoleKind = "處理";
+                        break;
+                    case 64:
+                        self.RoleKind = "貯存";
+                        break;
+                    default:
+                        self.RoleKind = "";
+                        break;
+                }
+            }
+        },
+        computed: {
+
+        },
+        created: function () {
+            this.GetData();
+        }
+    })
+    </script>
+}

@@ -1,0 +1,147 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.RecordReportVueModel
+@{
+}
+<style>
+    td, th {
+        word-break: break-word;
+    }
+ @@media print{
+    #printButton{
+        display:none;
+    }
+ }
+    html {
+        background-color: #f8f9fc !important;
+    }
+    table.table-bordered, tr, th, td, tbody, thead,
+    tbody [rowspan],
+    tbody [rowspan] ~ th,
+    tbody [rowspan] ~ td,
+    tbody [colspan] ~ th,
+    tbody [colspan] ~ td,
+    tbody > td,
+    tbody > tr,
+    table.table-bordered td,
+    table.table-bordered th {
+        border: 2px solid !important;
+        border-color: black !important;
+    }
+
+</style>
+<div id="app">
+    <br />
+    <input id="printButton" type="button" style="margin-bottom:10px;" class="btn btn-outline-primary" value="列印" onclick="printMe();" />
+    <br />
+    <h5>案場排出登記申請編號:@ViewData["No"].ToString()</h5>
+    <h5>處理廠/貯存場機構名稱:{{CompanyName}}</h5>
+    <h5>送出審查日期:{{SubmitDate}}</h5>
+    <table class="table table-bordered table-hover text-center" style="table-layout:fixed">
+        <tr>
+            <td rowspan="2">@Html.DisplayNameFor(model => model.record.ShipmentDate)</td>
+            <td rowspan="2">@Html.DisplayNameFor(model => model.record.RecordItemID)</td>
+            <td rowspan="2">@Html.DisplayNameFor(model => model.recordItem.Code_no)</td>
+            <td rowspan="2">@Html.DisplayNameFor(model => model.record.RecordWeight)</td>
+            <td rowspan="2">@Html.DisplayNameFor(model => model.record.WasteSn)</td>
+            <td colspan="5">物料流向</td>
+        </tr>
+        <tr>
+            <td>@Html.DisplayNameFor(model => model.record.VendorName)</td>
+            <td>@Html.DisplayNameFor(model => model.record.UseFor)</td>
+            <td>@Html.DisplayNameFor(model => model.record.ExportNumber)</td>
+            <td>@Html.DisplayNameFor(model => model.record.CountryName)</td>
+            <td>@Html.DisplayNameFor(model => model.record.ContainerSn)</td>
+        </tr>
+        <tr v-for="(item,index) in RecList">
+            <td>{{item.ShipmentDate|formatDate}}</td>
+            <td>{{item.Code_name + GetItemName2(item) }}</td>
+            <td>{{item.Code_no}}</td>
+            <td>{{item.RecordWeight}}</td>
+            <td>{{item.WasteSn}}</td>
+            <td>{{item.VendorName}}</td>
+            <td>{{item.UseFor}}</td>
+            <td>{{item.ExportNumber}}</td>
+            <td>{{item.CountryName}}</td>
+            <td>{{item.ContainerSn}}</td>
+        </tr>
+        <tr>
+            <td>稽核單位說明</td>
+            <td colspan="9" style="text-align:left">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                處理廠/貯存場<br />
+                機構簽名/蓋章
+            </td>
+            <td colspan="4" style="text-align:left">
+            </td>
+            <td>
+                稽核單位<br />
+                簽名/蓋章
+            </td>
+            <td colspan="4" style="text-align:left">
+            </td>
+        </tr>
+    </table>
+    <div>
+        註：本表可借裝櫃記錄用
+    </div>
+</div>
+@section Scripts{ 
+    <script>
+        function printMe() {
+            window.print()
+        }
+        var app = new Vue({
+            el: "#app",
+            data: {
+                RecList: [],
+                SubmitDate: "",
+                CompanyName: "",
+                Count:0
+            },
+            methods: {
+                GetItemName2: function (item) {
+                    var itemName = item.Code_no.substring(4, 6) == "99" && item.Code_Type == "Prod" ? item.ItemName : "";
+                    if (itemName)
+                        return "(" + itemName + ")";
+                    else
+                        return "";
+                },
+                GetList: function () {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "取得報表",
+                        url: "@Url.Content("~/api/Record/GetRecords")",
+                        data: { No: "@ViewData["No"].ToString()" },
+                        success: function (result) {
+                            self.RecList = result;
+                            self.CompanyName = result[0].CompanyName;
+                            self.Count = self.RecList.length;
+                            return result;
+                        }
+                    })
+                },
+                GetSumbitDate: function () {
+                    var self = this
+                    self.$http.post({
+                        ApiDesc: "取得送出審查日期",
+                        url: "@Url.Content("~/api/Record/GetSumbitDate")",
+                        data: { No: "@ViewData["No"].ToString()" },
+                        success: function (result) {
+                            self.SubmitDate = result.SubmitDate
+                        }
+                    })
+                }
+            },
+            created: function () {
+                var self = this;
+                self.GetList();
+                self.GetSumbitDate();
+
+            }
+        })
+    </script>
+}
+

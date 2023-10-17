@@ -1,0 +1,164 @@
+﻿@page
+@{
+    ViewData["Title"] = "系統環境參數設定";
+}
+
+<div id="app">
+    <div class="row">
+        <div class="col-lg-6">
+            <h3>網站相關設定</h3>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">網站名稱</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" v-model="Rec.SiteName" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">聯絡電話</label>
+                <div class="col-md-9">
+                    <input type="tel" class="form-control" v-model="Rec.ContactPhone" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">諮詢電話</label>
+                <div class="col-md-9">
+                    <input type="tel" class="form-control" v-model="Rec.SupportPhone" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">系統更新日期</label>
+                <div class="col-md-9">
+                    <flat-pickr v-model="Rec.UpdateDt" :config="FlatPickrCfg" placeholder="系統更新日期" name="FlatPickrCfg" class="form-control"></flat-pickr>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">預設密件副本收件者</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" @@change="MailChnage($event,Rec.MailBcc)" />
+                    <template v-for="(item,inex) in Rec.MailBcc">
+                        <a href="#" @@click.prevent="Rec.MailBcc.splice(inex,1);" aria-label="刪除此組Email" title="刪除此組Email"><i aria-label="刪除此組Email" title="刪除此組Email" class="fas fa-fw fa-trash" aria-hidden="true"></i></a>
+                        <span class="text-primary">{{item}}</span>
+                        <span v-show="inex < Rec.MailBcc.length - 1">、</span>
+                    </template>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">聯絡我們 Email 設定</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" @@change="MailChnage($event,Rec.ContactUsEmail)" />
+                    <template v-for="(item,inex) in Rec.ContactUsEmail">
+                        <a href="#" @@click.prevent="Rec.ContactUsEmail.splice(inex,1);" title="刪除此組Email"><i class="fas fa-fw fa-trash" aria-hidden="true"></i></a>
+                        <span class="text-primary">{{item}}</span>
+                        <span v-show="inex < Rec.ContactUsEmail.length - 1">、</span>
+                    </template>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">審查副本收件者</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" @@change="MailChnage($event,Rec.ReviewCcEmail)" />
+                    <template v-for="(item,inex) in Rec.ReviewCcEmail">
+                        <a href="#" @@click.prevent="Rec.ReviewCcEmail.splice(inex,1);" title="刪除此組Email"><i class="fas fa-fw fa-trash" aria-hidden="true"></i></a>
+                        <span class="text-primary">{{item}}</span>
+                        <span v-show="inex < Rec.ReviewCcEmail.length - 1">、</span>
+                    </template>
+                </div>
+            </div>
+            <hr>
+        </div>
+        <div class="col-lg-6">
+            <h3>郵件主機相關設定</h3>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">主機位置</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" v-model="Rec.StmpServer.MailServer" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">Port</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" v-model="Rec.StmpServer.MailPort" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">預設發信者</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" v-model="Rec.StmpServer.SenderName" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">預設發信者Email</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" v-model="Rec.StmpServer.Sender" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">密碼</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="text" v-model="Rec.StmpServer.Password" />
+                </div>
+            </div>
+            <hr>
+        </div>
+    </div>
+    <div class="row">
+        <div class="text-right col-md-12">
+            <input type="button" value="載入設定檔" class="btn btn-outline-warning" @@click="Load();" />
+            <input type="button" value="確認存檔" class="btn btn-outline-primary" @@click="Save(Rec);" />
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                Rec: {
+                    StmpServer: {}
+                },
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                }
+            },
+            methods: {
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Action("Load","SysConfig")",
+                        data: {},
+                        success: function (_Result) {
+                            me.Rec = _Result;
+                        }
+                    });
+                },
+                MailChnage: function (e, MailList) {
+                    var re = /^(([^<>()\[\]\.,;:\s@@\"]+(\.[^<>()\[\]\.,;:\s@@\"]+)*)|(\".+\"))@@(([^<>()[\]\.,;:\s@@\"]+\.)+[^<>()[\]\.,;:\s@@\"]{2,})$/i;
+                    if (re.test(e.target.value.toLowerCase())) {
+                        MailList.push(e.target.value.toLowerCase());
+                    }
+                    e.target.value = "";
+                },
+                Save: function (Rec) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料存檔",
+                        url: "@Url.Action("Save","SysConfig")",
+                        data: Rec,
+                        success: function (_Result) {
+                            return;
+                        }
+                    });
+                }
+            },
+            created: function () {
+                this.Load();
+            }
+        });
+    </script>
+}
+
+

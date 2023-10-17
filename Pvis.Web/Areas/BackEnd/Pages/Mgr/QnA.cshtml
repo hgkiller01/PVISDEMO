@@ -1,0 +1,103 @@
+﻿@page
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "問與答";
+}
+
+@section heads{
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/jexcel@2.1.0/dist/css/jquery.jexcel.css">
+}
+<div class="form-inline inline-box">
+    <button class="btn btn-sm btn-primary" id="save">存檔</button>
+    <div class="mx-4"></div>
+    <button class="btn btn-sm btn-outline-success" id="reload">重新載入</button>
+</div>
+
+<h4 class="mt-4">※ 廢太陽光電板回收處理機制</h4>
+<div class="pl-4">
+    <div class="jexcel-rwd">
+        <div id="C0"></div>
+    </div>
+    <div><input type="button" class="btn btn-sm btn-outline-dark" value="新增1列" onclick="$('#C0').jexcel('insertRow')" /></div>
+</div>
+
+<h4 class="mt-4">※ 帳號登入相關問題</h4>
+<div class="pl-4">
+    <div class="jexcel-rwd">
+        <div id="C1"></div>
+    </div>
+    <div><input type="button" class="btn btn-sm btn-outline-dark" value="新增1列" onclick="$('#C1').jexcel('insertRow')" /></div>
+</div>
+
+<h4 class="mt-4">※ 線上登記排出廢太陽光電板相關問題</h4>
+<div class="pl-4">
+    <div class="jexcel-rwd">
+        <div id="C2"></div>
+    </div>
+    <div><input type="button" class="btn btn-sm btn-outline-dark" value="新增1列" onclick="$('#C2').jexcel('insertRow')" /></div>
+</div>
+@section Scripts{
+    <script src="//cdn.jsdelivr.net/combine/npm/jexcel@2.1.0/dist/js/jquery.csv.min.js,npm/jexcel@2.1.0/dist/js/jquery.jexcel.min.js"></script>
+    <script>
+        $(function () {
+            $("#jexcel_textarea").before("<label for='jexcel_textarea'></label>");
+        })
+        /** 設置jexcel */
+        function setJexcel() {
+            var url = '@Url.Content("~/mgr/qna.json")' + '?' + new Date().getTime();
+            var opt = {
+                colHeaders: ['Q', 'A'],
+                colWidths: [600, 800],
+                colAlignments: [ 'left', 'left' ],
+                tableOverflow: true,
+                tableHeight: '30vh',
+            }
+            var C0 = [], C1 = [], C2 = [];
+
+            $.getJSON(url, function (json) {
+                try { C0 = $.csv.toArrays($.csv.fromObjects(json.C0)).slice(1); } catch(e) { }
+                try { C1 = $.csv.toArrays($.csv.fromObjects(json.C1)).slice(1); } catch(e) { }
+                try { C2 = $.csv.toArrays($.csv.fromObjects(json.C2)).slice(1); } catch(e) { }
+            }).always(function () {
+                $('#C0').jexcel($.extend({}, opt, { data: C0 }));
+                $('#C1').jexcel($.extend({}, opt, { data: C1 }));
+                $('#C2').jexcel($.extend({}, opt, { data: C2 }));
+            });
+        }
+
+        setJexcel();
+
+        // 重新載入
+        $('#reload').on('click', function () {
+            $('#C0').jexcel('destroy');
+            $('#C1').jexcel('destroy');
+            $('#C2').jexcel('destroy');
+            setJexcel();
+        });
+        // 存檔
+        $('#save').on('click', function () {
+            var qna = {
+                C0: getJexcelJson('#C0'),
+                C1: getJexcelJson('#C1'),
+                C2: getJexcelJson('#C2')
+            };
+
+            function getJexcelJson(id) {
+                return JSON.stringify($.csv.toObjects('Q,A\n' + $.csv.fromArrays($(id).jexcel('getData'))));
+            }
+
+            $.ajax({
+                url: '@Url.Action("Save", "QnA")',
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(qna)
+            }).done(function () {
+                alert('存檔成功')
+            }).fail(function (xhr) {
+                alert(xhr.responseText)
+            });
+        });
+        
+    </script>
+}

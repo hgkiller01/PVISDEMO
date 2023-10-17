@@ -1,0 +1,39 @@
+﻿@page
+@model NewsModel
+@{
+    ViewData["Title"] = "最新消息";
+}
+@section heads{
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.18/css/dataTables.bootstrap4.min.css">
+}
+<div class="container py-1">
+    <table class="table" id="news">
+        <thead>
+            <tr class="bg-faded text-nowrap">
+                <th style="min-width:6rem;">@Html.DisplayNameFor(model => model.News[0].PostDt)</th>
+                <th class="w-100">@Html.DisplayNameFor(model => model.News[0].Subject)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.News)
+            {
+                <tr>
+                    <td>
+                        @item.PostDt.yyyyMMdd()
+                        @if (item.IsHot)
+                        {<i aria-hidden="true" class="fa fa-fw fa-tag text-primary"></i>}
+                    </td>
+                    <td><a asp-page="NewsItem" asp-route-id="@item.Pid">@item.Subject</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@section Scripts{
+    <script src="//cdn.datatables.net/v/bs4/dt-1.10.18/datatables.min.js"></script>
+    <script src="~/js/DataTables/setting.js"></script>
+    <script>
+        $('#news').DataTable({ order: [0, 'desc'] });
+        $("th").attr("scope", "col");
+    </script>
+}

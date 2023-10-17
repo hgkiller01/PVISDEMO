@@ -1,0 +1,151 @@
+﻿@page
+@{
+    ViewData["Title"] = "海關進口資料查詢";
+}
+
+    <div id="app" v-cloak>
+        <environment include="Development">
+            <pre>{{Rec|json}}</pre>
+            <pre>{{Qry|json}}</pre>
+        </environment>
+        <div class="form-inline inline-box">
+            <label for="Fac_ID" class="control-label">業者統編:</label>
+            <input type="text" class="form-control" id="Fac_ID" v-model="Qry.Fac_ID" />
+            <label for="Fac_Name" class="control-label">業者名稱:</label>
+            <input type="text" class="form-control" id="Fac_Name" v-model="Qry.Fac_Name" />
+            <label for="Dt" class="control-label ml-4">報關日期:</label>
+            <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+            ～<flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+            <div class="m-auto"></div>
+            <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        </div>
+        <div class="text-right">
+            <br />
+            <label class="control-label">資料更新日期:2020.05.11</label>
+        </div>
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>業者統編</th>
+                        <th>業者名稱</th>
+                        <th>報關日期</th>
+                        <th>報單號碼</th>
+                        <th>統計用數量</th>
+                        <th>統計用單位</th>
+                        <th>淨重(公斤)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td>{{item.Fac_ID}}</td>
+                        <td>{{item.Fac_Name}}</td>
+                        <td>{{item.CustDate | formatDate}}</td>
+                        <td>{{item.CustNo}}</td>
+                        <td>{{item.Qty}}</td>
+                        <td>{{item.Unit}}</td>
+                        <td>{{item.Kilogram}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <partial name="_PagerRecListPartial" />
+        </div><!-- 分頁控制 -->
+
+        <input type="button" value="查詢結果下載" @@click="GetExcel(Qry)" class="btn btn-outline-success" />
+        <div class="text-left">
+            <br />
+            <label class="control-label">1.本項資料係於2020年05月11日自通關系統資料庫擷取（計8,838筆），日後仍有可能變動，資料仍以報單所載為準。</label>
+            <br />
+            <label class="control-label">2.統計用數量代碼說明，PCE為個、片、塊、段、枝，SET為組、套。</label>
+        </div>
+    </div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/downloadxlsx.js"></script>
+    <!--使用JS-XLSX操作xlsx-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/xlsx.full.min.js"></script>
+    <!--使用FileSaver下載資料成為檔案-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],
+                Rec: {},
+                Qry: {},
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+            },
+            methods: {
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/Customs/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/Customs/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+
+                GetExcel: function (Qry) {
+                    var me = this;
+                    //檔名
+                    var filename = 'download.xlsx';
+                    //表名
+                    var sheetname = '海關進口資料';
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/Customs/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+
+                            var tmp = [['業者統編', '業者名稱', '報關日期', '報單號碼', '貨品分類號列'
+                                       , '統計用數量', '統計用單位', '淨重(公斤)', '貨物名稱']]
+                            for( let i = 0 ; i < _Result.length ; i++ ){
+
+                                data = [[_Result[i].Fac_ID, _Result[i].Fac_Name, FormatDate(_Result[i].CustDate), _Result[i].CustNo, _Result[i].ProdTypeCode
+                                        , _Result[i].Qty, _Result[i].Unit, _Result[i].Kilogram, _Result[i].ProdName]];
+                                tmp = tmp.concat(data)
+                            }
+                            downloadxlsx(filename, sheetname, tmp);
+                        }
+                    });
+                },
+            },
+            created: function () {
+
+                this.Load();
+            }
+        });
+
+
+    </script>
+}

@@ -1,0 +1,357 @@
+﻿@page
+@{
+    ViewData["Title"] = "最新消息後臺管理";
+}
+
+<div id="app" v-cloak>
+    <div v-if="action == 'View'">
+        <div class="form-inline inline-box">
+            <label for="keyword" class="control-label">關鍵字查詢:</label>
+            <input type="text" class="form-control" id="keyword" v-model="Qry.KeyWord" />
+            <label class="control-label ml-4">上架狀態:</label>
+            <label><input type="radio" v-model="Qry.IsEnable" />不限</label>
+            <label><input type="radio" v-model="Qry.IsEnable" :value="true" />是</label>
+            <label><input type="radio" v-model="Qry.IsEnable" :value="false" />否</label>
+            <div class="m-auto"></div>
+            <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+            <input type="button" value="新增資料" @@click="Edit()" class="btn btn-outline-primary" />
+        </div><!-- 查詢過濾條件設定 -->
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center" id="ResultTable">
+                <thead>
+                    <tr>
+                        <th>訊息主旨</th>
+                        <th class="w-6">發布日期</th>
+                        <th class="w-4">上架</th>
+                        <th class="w-13">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td>{{item.Subject}}</td>
+                        <td>{{item.PostDt|formatDate}}</td>
+                        <td>{{item.IsEnable}}</td>
+                        <td>
+                            <input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item);" />
+                            <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,pageStart+index);" />
+                            <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(index+pageStart);" tabindex="-1" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <partial name="_PagerRecListPartial" />
+        </div><!-- 分頁控制 -->
+    </div>
+
+    <div v-if="action == 'Edit' || action == 'Add'" id="Modify">
+        <h4 class="modal-title">[編輯]{{Rec.Subject}}</h4>
+        <div class="form-group row">
+            <label class="col-sm-2 col-form-label" for="Subject">主旨</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="Rec.Subject" maxlength="250" id="Subject" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-2 col-form-label">上架</label>
+            <div class="col-sm-10">
+                <div class="form-check-inline">
+                    <input type="checkbox" v-model="Rec.IsEnable" id="IsEnable" />
+                    <label class="form-check-label" for="IsEnable">勾選上架後前台才會顯示此篇訊息。</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-2 col-form-label" for="PostDt">發布日期</label>
+            <div class="col-sm-4">
+                <flat-pickr v-model="Rec.PostDt" :config="FlatPickrCfg" placeholder="發布日期" name="FlatPickrCfg" class="form-control" id="PostDt"></flat-pickr>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-2 col-form-label" for="ExpireDt">下架日期</label>
+            <div class="col-sm-4">
+                <flat-pickr v-model="Rec.ExpireDt" :config="FlatPickrCfg" placeholder="下架日期" name="FlatPickrCfg" class="form-control" id="ExpireDt"></flat-pickr>
+            </div>
+        </div>
+        <div class="form-group">
+            <tinymce-editor :init="editorInit" v-model="Rec.Body"></tinymce-editor>
+        </div>
+        <div class="form-inline inline-box">
+            <label class="control-label" for="customFile">附件上傳</label>
+            <input type="file" accept=".pdf" class="form-control" id="customFile" @@change="FileUpLoadChange($event,Attached)" ref="customFile" />
+            <button type="button" class="btn btn-primary" @@click="SaveAttached(Rec,Attached);" v-show="Attached.HasFile">新增附件</button>
+            <button type="button" class="btn btn-danger" @@click="DeleteAttached(Rec);">移除附件</button>
+        </div>
+        <div class="form-group row">
+            <button type="button" class="btn btn-primary" @@click="Save(Rec);">存檔</button>
+            <button type="button" class="btn btn-warning" @@click="Back();">取消</button>
+        </div>
+    </div>
+    <!--<div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]{{Rec.Subject}}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label" for="Subject">主旨</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="Rec.Subject" maxlength="250" id="Subject" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">上架</label>
+                        <div class="col-sm-10">
+                            <div class="form-check-inline">
+                                <input type="checkbox" v-model="Rec.IsEnable" id="IsEnable" />
+                                <label class="form-check-label" for="IsEnable">勾選上架後前台才會顯示此篇訊息。</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label" for="PostDt">發布日期</label>
+                        <div class="col-sm-4">
+                            <flat-pickr v-model="Rec.PostDt" :config="FlatPickrCfg" placeholder="發布日期" name="FlatPickrCfg" class="form-control" id="PostDt"></flat-pickr>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label" for="ExpireDt">下架日期</label>
+                        <div class="col-sm-4">
+                            <flat-pickr v-model="Rec.ExpireDt" :config="FlatPickrCfg" placeholder="下架日期" name="FlatPickrCfg" class="form-control" id="ExpireDt"></flat-pickr>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <tinymce-editor :init="editorInit" v-model="Rec.Body"></tinymce-editor>
+                    </div>
+                    <div class="form-inline inline-box">
+                        <label class="control-label" for="customFile">附件上傳</label>
+                        <input type="file" accept=".pdf" class="form-control" id="customFile" @@change="FileUpLoadChange($event,Attached)" ref="customFile" />
+                        <button type="button" class="btn btn-primary" @@click="SaveAttached(Rec,Attached);" v-show="Attached.HasFile">新增附件</button>
+                        <button type="button" class="btn btn-danger" @@click="DeleteAttached(Rec);">移除附件</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @@click="Save(Rec);">存檔</button>
+                    <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>--><!-- 編輯框 -->
+    <div id="ViewDialog" class="modal fade text-left" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[檢視]{{Rec.Subject}}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row">
+                        <dt class="col-sm-2">主旨</dt>
+                        <dd class="col-sm-10">{{Rec.Subject}}</dd>
+
+                        <dt class="col-sm-2">發布日期</dt>
+                        <dd class="col-sm-10">{{Rec.PostDt|formatDate}}</dd>
+
+                        <dt class="col-sm-2">訊息內容</dt>
+                        <dd class="col-sm-10"><div v-html="Rec.Body"></div></dd>
+                        <dt class="col-sm-2" v-show="AttList && AttList.length > 0 ">附件</dt>
+                        <dd class="col-sm-10" v-show="AttList && AttList.length > 0 ">
+                            <ul class="m-0 p-0">
+                                <li v-for="(item,index) in AttList">
+                                    <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                </li>
+                            </ul>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div><!-- 檢視框 -->
+</div>
+
+@section Scripts{
+    <script src="~/lib/tinymce/tinymce.min.js"></script>
+    <script src="~/lib/tinymce/langs/zh_TW.js"></script>
+    <script src="~/js/tinymce-vue.min.js"></script>
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script>
+
+    </script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList],
+            components: {
+               /* 'tinymce-editor': Editor,*/ // <- Important part
+                'tinymce-editor': Editor
+            },
+            data: {
+                RecList: [],
+                AttList: [],
+                Rec: {},
+                Qry: {},
+                action : "View",
+                Attached: { HasFile: false },
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+                editorInit: {
+                    height: 500,
+                    menubar: 'file edit view format tools help',
+                    plugins: [
+                        'print preview paste code importcss searchreplace autolink autosave save directionality code visualblocks visualchars fullscreen image link media template codesample table charmap hr pagebreak nonbreaking anchor toc insertdatetime advlist lists wordcount imagetools textpattern noneditable help charmap quickbars emoticons image'
+                    ],
+                    fontsize_formats: "0.7em 0.8em 1em 1.2em 1.4em 1.5em 2em 3em",
+                    toolbar: 'undo redo code | fontselect fontsizeselect formatselect | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat insertfile image media template link anchor codesample',
+                    file_picker_callback: function () { },
+                    file_picker_types: 'file image media',
+                    language: 'zh_TW',
+                    content_style: "body {font-size: 1em;}"
+                }
+            },
+            methods: {
+                View: function (item) {
+                    this.Rec = item;
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Action("GetItem","News")",
+                        data: {
+                            Pid: this.Rec.Pid
+                        },
+                        success: function (_Result) {
+                            me.Rec = _Result.Rec;
+                            me.AttList = _Result.AttList;
+                            $('#ViewDialog').modal("show");
+                        }
+                    });
+                },
+                Edit: function (item, index) {
+                    var self = this;
+                    this.Rec = item || {
+                        Subject: "",
+                        Body: ""
+                    };
+                    if (item) {
+                        self.action = "Edit";
+                    } else {
+                        self.action = "Add";
+                    }
+                    this.$refs.customFile.value = "";
+                    this.Attached =  { HasFile: false };
+                    //$('#ModifyDialog').modal("show");
+                    if (!this.Rec.Pid) return;
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Action("GetItem","News")",
+                        data: {
+                            Pid: this.Rec.Pid
+                        },
+                        success: function (_Result) {
+                            _Result.Rec.Body = self.formateHtml(_Result.Rec.Body);
+                            me.Rec = _Result.Rec;
+                            me.Rec.EditIndex = index;
+                            me.AttList = _Result.AttList;
+
+                        }
+                    });
+                },
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Action("GetList","News")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+                FileUpLoadChange: function (e, att) {
+                    var me = this;
+                    att.HasFile = false;
+                    var files = e.target.files || e.dataTransfer.files;
+                    if (!files.length) return;
+                    UiHelper.GetFile(files[0], function (f) {
+                        var _Err = [];
+                        if (!(/\.pdf$/i).test(f.name)) _Err.push("只能上傳Pdf格式檔案");
+                        if (f.size / (1024 * 1024) > 10) _Err.push("檔案不能超過10MB");
+                        if (_Err.length > 0) {
+                            UiHelper.alert("<ul><li>" + _Err.join("</li><li>") + "</li>");
+                            return;
+                        }
+                        me.IsShowUpLoadBtn = (_Err.length <= 0);
+                        att.HasFile = true;
+                        att.f = f;
+                    });
+                },
+                Delete: function (index) {
+                    var me = this;
+                    UiHelper.confirm("確定要刪除這筆資料!?", function () {
+                        me.$http.post({
+                            ApiDesc: "資料刪除",
+                            url: "@Url.Action("Delete","News")",
+                            data: me.RecList[index],
+                            success: function (_Result) {
+                                UiHelper.ShowMsg("資料已刪除。");
+                                me.RecList.splice(index, 1);
+                            }
+                        });
+                    });
+                },
+                SaveAttached: function (Rec, att) {
+                    if (!att.HasFile) return;
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "附件存檔",
+                        url: "@Url.Action("SaveAttached","News")",
+                        data: {
+                            Pid: Rec.Pid,
+                            att: att.f
+                        }
+                    });
+                },
+                DeleteAttached: function (Rec, att) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "附件移除",
+                        url: "@Url.Action("DeleteAttached","News")",
+                        data: {
+                            Pid: Rec.Pid
+                        }
+                    });
+                },
+                Save: function (Rec) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料存檔",
+                        url: "@Url.Action("Save","News")",
+                        data: Rec,
+                        success: function (_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+                                me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                            } else {
+                                me.RecList.unshift(_Result.Rec);
+                            }
+                            me.$forceUpdate();
+                            me.action = "View";
+                            me.GetList(me.Qry);
+                        }
+                    });
+                },
+                Back: function () {
+                    this.action = "View";
+                }
+            },
+            created: function () {
+                this.GetList(this.Qry);
+            }
+        });
+    </script>
+}

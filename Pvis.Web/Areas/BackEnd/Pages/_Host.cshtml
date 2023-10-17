@@ -1,0 +1,46 @@
+﻿@page "/blazor"
+
+@{
+    string path = Request.Path.ToString().ToLower();
+    if (path.Contains(""))
+    {
+
+    }
+    else
+    {
+        Layout = "_LayoutVue";
+    }
+    
+}
+
+<app>
+    <component type="typeof(Pvis.Web.Areas.BackEnd.Pages.App)" render-mode="ServerPrerendered" />
+</app>
+<div id="components-reconnect-modal"></div>
+
+
+<style>
+    .components-reconnect-modal .components-reconnect-show, .components-reconnect-failed, .components-reconnect-rejected {
+        display: none;
+    }
+</style>
+@section Scripts{
+    <script src="_framework/blazor.server.js"></script>
+    <script src="~/lib/barcodereader/zxing.js"></script>
+    <script src="~/lib/barcodereader/barcode.js"></script>
+    <script>
+        function after() {
+            UiHelper.unblockUI();
+        }
+        function showModal() {
+            $('body').addClass("modal-backdrop");
+        }
+        function closeModal() {
+            $('body').removeClass("modal-backdrop");
+        }
+        function showAlert(msg) {
+            alert(msg);
+        }
+    </script>
+}
+

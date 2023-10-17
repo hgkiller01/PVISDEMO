@@ -1,0 +1,19 @@
+﻿@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<h1 class="text-danger">錯誤</h1>
+<h2 class="text-danger">你的請求發生錯誤</h2>
+
+@if (Model.ShowRequestId)
+{
+    <p>
+        <strong>系統發生異常事件編號:</strong> <code>@Model.RequestId</code>
+    </p>
+}
+
+<p>
+    你的請求發生錯誤 請通知管理員
+</p>

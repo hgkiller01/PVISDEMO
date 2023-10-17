@@ -1,0 +1,279 @@
+﻿@page
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor httpContext
+@{
+    string showURL(IHttpContextAccessor httpcontextaccessor)
+    {
+        var request = httpcontextaccessor.HttpContext.Request;
+        var absoluteUri = string.Concat(
+                    request.Scheme,
+                    "://",
+                    request.Host.ToUriComponent(),
+                    request.PathBase.ToUriComponent(),
+                    request.Path.ToUriComponent(),
+                    request.QueryString.ToUriComponent());
+        return absoluteUri;
+    }
+    var item = httpContext.HttpContext.Request;
+    string url = showURL(httpContext);
+}
+@{
+    ViewData["Title"] = "廢太陽光電板回收 3C1R 八步驟";
+}
+@section heads{
+    <style>
+        .FirstImage {
+            position: relative;
+            z-index: 99;
+            max-width: 300px;
+            max-height: 300px;
+        }
+
+        .blockimg {
+            position: absolute;
+            top: 0;
+            max-width: 300px;
+            max-height: 300px;
+            z-index: 1;
+        }
+
+        .buttonImg {
+            position: absolute;
+            top: 100px;
+            left: 35%;
+            max-height: 100px;
+            max-width: 100px;
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        .allbutton {
+            position: absolute;
+            top: 280px;
+            left: 10%;
+            z-index: 1;
+        }
+
+        .Blockbox {
+            max-width: 280px;
+            max-height: 280px;
+            width:280px;
+            height:280px;
+            margin-top: 20px;
+            margin-right: 5px;
+        }
+
+        .modal-body {
+            height: 600px;
+        }
+    </style>
+}
+<picture>
+    <source media="(max-width: 750px)" alt="懶人包首頁圖合體" srcset="~/img/3C1R/Main-S.jpg" />
+    <source media="(max-width: 500px)" alt="懶人包首頁圖合體" srcset="~/img/3C1R/Main-S.jpg" />
+    <img class="img-fluid w-100" alt="懶人包首頁圖合體" title="懶人包首頁圖合體" src="~/img/3C1R/Main.jpg" />
+</picture>
+
+<div class="container">
+    <div class="row">
+        <div class="col-xl-8">
+            <nav aria-label="breadcrumb col-xl-4" role="navigation">
+                <ol class="breadcrumb py-0_25 mb-0_5">
+                    <li class="breadcrumb-item">現在位置： <a href="~/">首頁</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="text-end col-lg-4">
+            <a href="https://social-plugins.line.me/lineit/share?url=@url" style="text-decoration:none;" target="_blank" aria-label="Line分享(另開新頁)" title="Line分享(另開新頁)"><i aria-label="Line分享(另開新頁)" title="Line分享(另開新頁)" class="fab fa-line fa-2x" style="color:#82c91e"></i>&nbsp;</a>
+            <a href="https://www.facebook.com/sharer.php?u=@url" style="text-decoration:none;" target="_blank" aria-label="FackBook分享(另開新頁)" title="FackBook分享(另開新頁)"><i aria-label="FackBook分享(另開新頁)" title="FackBook分享(另開新頁)" class="fab fa-facebook-square fa-2x"></i>&nbsp;</a>
+            <a href="https://twitter.com/share?url=@url" style="text-decoration:none;" target="_blank" aria-label="Twitter分享(另開新頁)" title="Twitter分享(另開新頁)"><i aria-label="Twitter分享(另開新頁)" title="Twitter分享(另開新頁)" class="fab fa-twitter fa-2x" style="color:#00acee"></i>&nbsp;</a>
+            <a href="#" onclick="window.print()" style="text-decoration:none;" target="_blank" aria-label="友善列印" title="友善列印"><i aria-label="友善列印" title="友善列印" class="fas fa-print fa-2x"></i>&nbsp;</a>
+        </div>
+    </div>
+</div>
+
+<div class="container ">
+    <div class="row flex-center">
+        <div class="col-xl-3">
+            <img class="img-fluid" alt="回收3C1R八步驟" title="回收3C1R八步驟" src="~/img/3C1R/eightStep.jpg" />
+        </div>
+        <div class="col-xl-9">
+
+        </div>
+
+        <div class="col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img alt="拆卸與堆疊" class="FirstImage" src="~/img/3C1R/Break-01.jpg" />
+                <img alt="拆卸與堆疊-反白" class="blockimg" src="~/img/3C1R/Break-block-01.jpg" />
+                <img alt="拆卸與堆疊簡報按鈕" class="buttonImg" src="~/img/3C1R/Break-button.jpg" />
+            </div>
+        </div>
+
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/registered-01.jpg" alt="帳號註冊" class=" FirstImage" />
+                <img src="~/img/3C1R/registered-block-01.jpg" alt="帳號註冊-反白" class=" blockimg" />
+                <img src="~/img/3C1R/registered-button.jpg" alt="帳號註冊按鈕" class=" buttonImg" />
+            </div>
+        </div>
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/database.jpg" alt="資料建置" class=" FirstImage" />
+                <img src="~/img/3C1R/database-block.jpg" alt="資料建置-反白" class=" blockimg" />
+                <img src="~/img/3C1R/database-button.jpg" alt="資料建置按鈕" class="buttonImg" />
+            </div>
+        </div>
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/registration.jpg" alt="排出登記" class=" FirstImage" />
+                <img src="~/img/3C1R/registration-block.jpg" alt="排出登記-反白" class=" blockimg" />
+                <img src="~/img/3C1R/registration-button.jpg" alt="排出登記按鈕" class="buttonImg" />
+            </div>
+        </div>
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/affidavit.jpg" alt="簽署排出切結" class="FirstImage " />
+                <img src="~/img/3C1R/affidavit-block.jpg" alt="簽署排出切結-反白" class="blockimg" />
+                <img src="~/img/3C1R/affidavit-button.jpg" alt="簽署排出切結按鈕" class="buttonImg" />
+            </div>
+        </div>
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/contract.jpg" alt="清除處理合約簽訂" class=" FirstImage " />
+                <img src="~/img/3C1R/contract-block.jpg" alt="清除處理合約簽訂-反白" class="blockimg" />
+                <img src="~/img/3C1R/contract-button.jpg" alt="清除處理合約簽訂按鈕" class="buttonImg" />
+            </div>
+        </div>
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/clearance.jpg" alt="案場清運" class=" FirstImage " />
+                <img src="~/img/3C1R/clearance-block.jpg" alt="案場清運-反白" class="blockimg" />
+                <img src="~/img/3C1R/clearance-button.jpg" alt="案場清運按鈕" class="buttonImg" />
+            </div>
+        </div>
+        <div class=" col-xl-3 Blockbox">
+            <div style="position:relative">
+                <img src="~/img/3C1R/recycling.jpg" alt="永續處理" class="img-fluid FirstImage " />
+                <img src="~/img/3C1R/recycling-block.jpg" alt="永續處理-反白" class="blockimg" />
+                <img src="~/img/3C1R/recycling-button.jpg" alt="永續處理按鈕" class="buttonImg" />
+            </div>
+        </div>
+        <div class="col-xl-3 offset-lg-9">
+            <a target="_blank" title="案場排出完整簡報檔.pdf" href="~/pubFile/案場排出完整簡報檔.pdf">
+                <img class="img-fluid" src="~/img/3C1R/downloadAll.jpg" alt="下載完整簡報檔" />
+            </a>
+        </div>
+    </div>
+</div>
+
+@*<div class="container">
+        <div class="row">
+            <div class="col-8">
+
+            </div>
+            <div class="col-4">
+
+            </div>
+        </div>
+    </div>*@
+
+@*<div class="modal fade bd-example-modal-lg" id="showPfd" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+
+        </div>
+    </div>*@
+<div class="modal" id="modalLg">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="margin:0px;padding:0px;overflow:hidden">
+                    <iframe id="pdfFrame" title="簡報" frameborder="0" style="overflow:hidden;height:100%;width:100%" src="">
+                    </iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script>
+        $("#main").removeClass("container").addClass("container-fluid").removeClass("pt-2").addClass("p-0");
+        $("#bread").remove();
+        $("#breadtittle").remove();
+        $(function () {
+
+            $(".Blockbox").hover(function () {
+                $(this).children().children(".FirstImage").hide();
+            }, function () {
+                $(this).children().children(".FirstImage").show();
+            })
+            $(".buttonImg").click(function () {
+                var pdfurl = $(this).attr("alt");
+                switch (pdfurl) {
+                    case "拆卸與堆疊簡報按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/拆卸與堆疊01.pdf")");
+                        break;
+                    case "帳號註冊按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/帳號註冊02.pdf")");
+                        break;
+                    case "資料建置按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/資料建置03.pdf")");
+                        break;
+                    case "排出登記按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/排出登記04.pdf")");
+                        break;
+                    case "簽署排出切結按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/簽署排出切結05.pdf")");
+                        break;
+                    case "清除處理合約簽訂按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/清除處理合約簽訂06.pdf")");
+                        break;
+                    case "案場清運按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/案場清運07.pdf")");
+                        break;
+                    case "永續處理按鈕":
+                        $("#pdfFrame").attr("src", "@Url.Content("~/pubFile/永續處理08.pdf")");
+                        break;
+                }
+                $("#modalLg").modal('show');
+            })
+        })
+
+    </script>
+
+}
+@*<div class="container py-1">
+        <p class="h5 mb-1 text-center">為了完全綠能的未來，請協助完成太陽光電的最後一環讓資源再利用、環境更美好</p>
+        <div class="jumbotron py-1">
+            <div class="offset-lg-3 col-lg-6 h5" id="step">
+                <div class="d-flex flex-wrap">
+                    <img class="me-1" data-cfw="lazy" data-cfw-lazy-src="@Url.Content("~/img/step/1.png")" alt="問">
+                    <p>諮詢專線 (03)582-0009</p>
+                </div>
+                <hr>
+                <div class="d-flex flex-wrap">
+                    <img class="me-1" data-cfw="lazy" data-cfw-lazy-src="@Url.Content("~/img/step/2.png")" alt="集">
+                    <p>拆除收集廢太陽光電板/模組</p>
+                </div>
+                <hr>
+                <div class="d-flex flex-wrap">
+                    <img class="me-1" data-cfw="lazy" data-cfw-lazy-src="@Url.Content("~/img/step/3.png")" alt="填">
+                    <p>上網填寫登錄排出資訊</p>
+                </div>
+                <hr>
+                <div class="d-flex flex-wrap">
+                    <img class="me-1" data-cfw="lazy" data-cfw-lazy-src="@Url.Content("~/img/step/4.png")" alt="收">
+                    <p>等候通知清運業者聯繫收運</p>
+                </div>
+            </div>
+        </div>
+    </div>*@

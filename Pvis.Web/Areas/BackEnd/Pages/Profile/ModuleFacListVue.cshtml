@@ -1,0 +1,150 @@
+﻿@page
+@{
+    ViewData["Title"] = "模組製造業名單";
+}
+
+    <div id="app" v-cloak>
+        <environment include="Development">
+            <pre>{{Rec|json}}</pre>
+            <pre>{{Qry|json}}</pre>
+        </environment>
+        <div class="form-inline inline-box">
+            <label for="Applicant" class="control-label">機構名稱:</label>
+            <input type="text" class="form-control" id="Applicant" v-model="Qry.Fac_Name" />
+            <label for="City" class="control-label">縣市:</label>
+            <select class="form-control" v-model="Qry.City" id="City">
+                <option value="">不限</option>
+                <option v-for="option in CityOptions" :value="option.CountyName">{{option.CountyName}}</option>
+            </select>
+            <div class="m-auto"></div>
+            <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        </div>
+        <div class="text-right">
+            <br />
+            <label class="control-label">資料更新日期:2020.04.14</label>
+        </div>
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>機構名稱</th>
+                        <th>機構電話</th>
+                        <th>機構地址</th>
+                        <th>工廠地址</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td>{{item.Fac_Name}}</td>
+                        <td>{{item.Fac_Tel}}</td>
+                        <td>{{item.Company_Addr}}</td>
+                        <td>{{item.Fac_Addr}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <partial name="_PagerRecListPartial" />
+        </div><!-- 分頁控制 -->
+
+        <input type="button" value="查詢結果下載" @@click="GetExcel(Qry)" class="btn btn-outline-success" />
+    </div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/downloadxlsx.js"></script>
+    <!--使用JS-XLSX操作xlsx-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/xlsx.full.min.js"></script>
+    <!--使用FileSaver下載資料成為檔案-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],
+                Rec: {},
+                Qry: {},
+                CityOptions: [],
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+            },
+            methods: {
+                GetCityOptions: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "取得縣市",
+                        url: "@Url.Action("GetCityOptions","ModuleFacList")",
+                        data: {},
+                        success: function (_Result) {
+                            me.CityOptions = _Result;
+                            return;
+                        }
+                    });
+                },
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/ModuleFacList/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/ModuleFacList/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+
+                GetExcel: function (Qry) {
+                    var me = this;
+                    //檔名
+                    var filename = 'download.xlsx';
+                    //表名
+                    var sheetname = '模組製造業名單';
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/ModuleFacList/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+
+                            var tmp = [['機構名稱', '機構電話', '機構地址', '工廠地址']]
+                            for( let i = 0 ; i < _Result.length ; i++ ){
+
+                                data = [[_Result[i].Fac_Name, _Result[i].Fac_Tel, _Result[i].Company_Addr, _Result[i].Fac_Addr]];
+                                tmp = tmp.concat(data)
+                            }
+                            downloadxlsx(filename, sheetname, tmp);
+                        }
+                    });
+                },
+            },
+            created: function () {
+
+                this.Load();
+                this.GetCityOptions();
+            }
+        });
+
+    </script>
+}

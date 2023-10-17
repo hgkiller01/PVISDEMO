@@ -1,0 +1,264 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.CheckReportVueModel
+@{
+}
+<style>
+    td, th {
+        word-break: break-word;
+    }
+    @@media print {
+        #printButton {
+            display: none;
+        }
+    }
+    html {
+        background-color: #f8f9fc !important;
+    }
+    table.table-bordered, tr, th, td, tbody, thead,
+    tbody [rowspan],
+    tbody [rowspan] ~ th,
+    tbody [rowspan] ~ td,
+    tbody [colspan] ~ th,
+    tbody [colspan] ~ td,
+    tbody > td,
+    tbody > tr,
+    table.table-bordered td,
+    table.table-bordered th {
+        border: 2px solid !important;
+        border-color: black !important;
+    }
+</style>
+<div id="app" v-cloak>
+    <br />
+    <input id="printButton" type="button" style="margin-bottom:10px;" class="btn btn-outline-primary" value="列印" onclick="printMe();" />
+    <br />
+    <h3>稽核報告</h3>
+    <div class="table-responsive-md">
+        <table class="table table-bordered table-hover text-center" style="table-layout:fixed;">
+            <thead>
+                <tr>
+                    <th>稽核行程編號：</th>
+                    <th colspan="2">@ViewData["No"]</th>
+                    <th colspan="3">
+                        行程期間<br />
+                        {{HeadData.StartDate}} - {{ HeadData.EndDate}}
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>本次行程共：</td>
+                    <td>{{HeadData.SchCount + '筆案場排出'}}</td>
+                    <td>
+                        案場排出申請編號，分別為：
+                    </td>
+                    <td>
+                        <div class="row">
+                            <div class="col-lg-12" v-for="(item,index) in HeadData.Details">
+                                {{item.BookingNo + ' : ' + item.PvCount + '片' }}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        合計:
+                        (片數)
+                    </td>
+                    <td>
+                        {{HeadData.TotalCount}}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        處理廠/貯存場機構名稱：
+                    </td>
+                    <td colspan="4">
+                        {{HeadData.CompanyName}}
+                    </td>
+                    <td>重量單位：公斤</td>
+                </tr>
+                <tr>
+                    <td>處理前廢PV重量</td>
+                    <td colspan="2">
+                        {{HeadData.TotalWeight}}
+                    </td>
+                    <td colspan="3">附件：通過稽核之各案場排出申請編號01-1序號清單</td>
+                </tr>
+                <tr>
+                    <td colspan="6">處理後產出重量資訊</td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        拆解程序
+                    </td>
+                    <td colspan="3">
+                        破碎程序
+                    </td>
+                </tr>
+                <tr>
+                    <td>拆解產出物名稱</td>
+                    <td>重量</td>
+                    <td>備註</td>
+                    <td>破碎產出物名稱</td>
+                    <td>重量</td>
+                    <td>備註</td>
+                </tr>
+                <tr v-for="(n,i) in maxcout">
+                    <td>{{GetItemName(i,1)}}</td>
+                    <td>{{GetItemWeight(i,1)}}</td>
+                    <td></td>
+                    <td>{{GetItemName(i,2)}}</td>
+                    <td>{{GetItemWeight(i,2)}}</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="6">
+                        欄位配合處理程序將彈性調整
+                    </td>
+                </tr>
+                <tr>
+                    <td>處理損失%</td>
+                    <td colspan="5">
+                        {{DataResult}} %
+
+                    </td>
+                </tr>
+                <tr>
+                    <td>包裝材</td>
+                    <td colspan="5">
+                        {{HeadData.PkgTotalWeight}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div>
+            其他說明：
+        </div>
+        <div class="row">
+            <div class="col-12">
+                產出物追蹤流向:
+            </div>
+            <div class="col-12">
+                <table class="table table-borderless">
+                    @*<tr>
+                            <td>物料名稱</td>
+                            <td>代碼</td>
+                            <td>廠商名稱</td>
+                            <td>用途</td>
+                            <td>輸出許可字號</td>
+                            <td>輸出國別</td>
+                        </tr>*@
+                    <tr v-for="item in FooterData">
+                        <td>{{item.Code_name}} {{SetItemName(item.ItemName)}}</td>
+                        <td>{{item.Code_no}}</td>
+                        <td>{{item.VendorName}}</td>
+                        <td>{{item.UseFor}}</td>
+                        <td>{{item.ExportNumber}}</td>
+                        <td>{{item.CountryName}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    @*<ul>
+            <li v-for="(n,i) in mydata.length">{{mydata[i]}}</li>
+        </ul>*@
+</div>
+
+@section Scripts{ 
+    <script>
+        function printMe() {
+            window.print()
+        }
+        var app = new Vue({
+            el: "#app",
+            data: {
+                HeadData: {},
+                BreakData: [],
+                CrashData: [],
+                FooterData: [],
+                DataResult : 0,
+                maxcout: 0,
+            },
+        methods: {
+            SetItemName: function (item) {
+                if (item)
+                    return "(" + item + ")";
+                else
+                    return "";
+            },
+            GetItemName: function (index,kind) {
+                var self = this;
+                if (kind == 1) {
+                    if (self.BreakData[index])
+                        return self.BreakData[index].Code_name + self.SetItemName(self.BreakData[index].ItemWeight);
+                    else
+                        return "";
+                }
+                if (kind == 2) {
+                    if (self.CrashData[index])
+                        return self.CrashData[index].Code_name + self.SetItemName(self.CrashData[index].ItemWeight);
+                    else
+                        return "";
+                }
+
+            },
+            GetItemWeight: function (index,kind) {
+                var self = this;
+                if (kind == 1) {
+                    if (self.BreakData[index])
+                        return self.BreakData[index].ItemWeight;
+                    else
+                        return "";
+                }
+                if (kind == 2) {
+                    if (self.CrashData[index])
+                        return self.CrashData[index].ItemWeight;
+                    else
+                        return "";
+                }
+
+            },
+            SumData: function () {
+
+            },
+            GetData: function () {
+                var self = this;
+                self.$http.post({
+                    ApiDesc: "表頭資料",
+                    url: "@Url.Content("~/api/CheckReport/GetData")",
+                    data: { Aud_Sch_No: "@ViewData["No"]" },
+                    success: function (Result) {
+                        self.HeadData = Result;
+                        self.BreakData = Result.itemTotals.filter(function (item) {
+                            return item.Process == 1
+                        });
+                        self.CrashData = Result.itemTotals.filter(function (item) {
+                            return item.Process == 2;
+                        });
+                        self.maxcout = Math.max(self.BreakData.length, self.CrashData.length);
+                        self.FooterData = Result.recordLists;
+                        var sumbreak = 0;
+                        var sumcrash = 0;
+                        self.BreakData.forEach(function (item) {
+                            sumbreak += item.ItemWeight
+                        });
+                        self.CrashData.forEach(function (item) {
+                            sumcrash += item.ItemWeight
+                        });
+                        self.DataResult = Math.round((self.HeadData.TotalWeight - sumbreak - sumcrash) / self.HeadData.TotalWeight * 100);
+                    }
+
+                })
+
+
+                
+            }
+        },
+        created: function () {
+            var self = this;
+            self.GetData();
+
+        }
+        })
+    </script>
+}

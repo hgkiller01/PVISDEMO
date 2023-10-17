@@ -1,0 +1,315 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.RecordVueModel
+@using Pvis.Biz.Extension
+<style>
+    fieldset.scheduler-border {
+        border: 1px groove #ddd !important;
+        padding: 0 1.4em 1.4em 1.4em !important;
+        margin: 0 0 1.5em 0 !important;
+        -webkit-box-shadow: 0px 0px 0px 0px #000;
+        box-shadow: 0px 0px 0px 0px #000;
+    }
+
+    legend.scheduler-border {
+        font-size: 1.2em !important;
+        font-weight: bold !important;
+        text-align: left !important;
+        width: auto;
+        padding: 0 10px;
+        border-bottom: none;
+    }
+    td, th {
+        word-break: break-word;
+    }
+    html {
+        background-color: #f8f9fc !important;
+    }
+</style>
+<div id="app" v-cloak>
+    <div>
+        <h3>稽核行程編號:@ViewData["No"].ToString()</h3>
+    </div>
+    <div class="form-inline inline-box">
+        <input type="button" value="新增出廠" @@click="AddModel()" class="btn btn-outline-primary" />
+    </div>
+    <div class="table-responsive-md">
+        <table class="table table-bordered table-hover text-center" style="table-layout:fixed;">
+            <tr>
+                <td rowspan="2">@Html.DisplayNameFor(model => model.recordItem.Code_Type)</td>
+                <td rowspan="2">@Html.DisplayNameFor(model => model.recordItem.Code_no)</td>
+                <td rowspan="2">@Html.DisplayNameFor(model => model.record.RecordItemID)</td>
+                <td rowspan="2">@Html.DisplayNameFor(model => model.record.WasteSn)</td>
+                <td rowspan="2">@Html.DisplayNameFor(model => model.record.ShipmentDate)</td>
+                <td rowspan="2">@Html.DisplayNameFor(model => model.record.RecordWeight)</td>
+                <td colspan="5">物料流向</td>
+                <td rowspan="2">操作</td>
+            </tr>
+                <tr>
+                    <td>@Html.DisplayNameFor(model => model.record.VendorName)</td>
+                    <td>@Html.DisplayNameFor(model => model.record.UseFor)</td>
+                    <td>@Html.DisplayNameFor(model => model.record.ExportNumber)</td>
+                    <td>@Html.DisplayNameFor(model => model.record.CountryName)</td>
+                    <td>@Html.DisplayNameFor(model => model.record.ContainerSn)</td>
+                    
+                </tr>
+                <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{ChangeTypes(item.Code_Type)}}</td>
+                    <td>{{item.Code_no}}</td>
+                    <td>{{item.Code_name + GetItemName2(item)}}</td>
+                    <td>{{item.WasteSn}}</td>
+                    <td>{{item.ShipmentDate|formatDate}}</td>
+                    <td>{{item.RecordWeight}}</td>
+                    <td>{{item.VendorName}}</td>
+                    <td>{{item.UseFor}}</td>
+                    <td>{{item.ExportNumber}}</td>
+                    <td>{{item.CountryName}}</td>
+                    <td>{{item.ContainerSn}}</td>
+                    <td>
+                        @if (User.HasRole(RoleList.Admin, RoleList.Store,RoleList.Teart))
+                        {
+                            <input type="button" class="btn btn-outline-primary" value="編輯" v-on:click="EditModel(item)" />
+                            <input type="button" class="btn btn-outline-danger" value="刪除" v-on:click="Delete(item)" />
+                        }
+
+
+                        @*<input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item)" />
+            <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index+pageStart);" v-if="item.Status == '1' || item.Status ==  'M'" />*@
+                    </td>
+                </tr>
+        </table>
+        <!-- 分頁控制 -->
+        <div class="text-right">
+            <partial name="_PagerRecListPartial" />
+        </div>
+        <!-- 分頁控制 -->
+        <div class="modal fade" id="DataModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" data-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">
+                            <span v-if="Status == 'ADD'">新增</span>
+                            <span v-if="Status == 'Edit'">修改</span>
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <input type="hidden" v-model="EditRecord.RecordIemID" />
+                    <input type="hidden" v-model="EditRecord.CountryName" />
+                    <div class="modal-body">
+                        <div>
+                            <div class="form-group row">
+                                <input type="hidden" v-model="EditRecord.RecordID" />
+                                <label for="RecordItemID" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.RecordItemID)</label>
+                                <div class="col-md-9">
+                                    <select v-bind:disabled="Status == 'Edit'" id="RecordItemID" class="form-control" @@change="ChangeCode()" v-model="EditRecord.RecordItemID">
+                                        <option v-for="item in RecordItems" v-bind:value="item.RecordItemID">{{item.Code_name + GetItemName2(item)}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="Code_no" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.recordItem.Code_no)</label>
+                                <div class="col-md-9">
+                                    {{Code_no}}
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="Code_Type" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.recordItem.Code_Type)</label>
+                                <div class="col-md-9">
+                                    {{ChangeTypes(Code_Type)}}
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="WasteSn" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.WasteSn)</label>
+                                <div class="col-md-9">
+                                    <input type="text" maxlength="50" id="WasteSn" class="form-control" v-model="EditRecord.WasteSn" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="RecordWeight" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.RecordWeight)</label>
+                                <div class="col-md-9">
+                                    <input type="number" id="RecordWeight" class="form-control" v-model="EditRecord.RecordWeight" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="ShipmentDate" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.ShipmentDate)</label>
+                                <div class="col-md-9">
+                                    <flat-pickr v-model="EditRecord.ShipmentDate" :config="config" name="ShipmentDate" class="form-control" id="ShipmentDate">
+                                    </flat-pickr>
+                                </div>
+                            </div>
+                            <fieldset class="scheduler-border">
+                                <legend class="scheduler-border">物料流向</legend>
+                                <div class="form-group row">
+                                    <label for="VendorName" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.VendorName)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" maxlength="50" id="VendorName" class="form-control" v-model="EditRecord.VendorName" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="UseFor" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.UseFor)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" maxlength="50" id="UseFor" class="form-control" v-model="EditRecord.UseFor" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="ExportNumber" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.ExportNumber)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" maxlength="50" id="ExportNumber" class="form-control" v-model="EditRecord.ExportNumber" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="CountryName" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.CountryName)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" maxlength="50" id="CountryName" class="form-control" v-model="EditRecord.CountryName" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="ContainerSn" class="col-md-3 col-form-label">@Html.DisplayNameFor(model => model.record.ContainerSn)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" maxlength="50" id="ContainerSn" class="form-control" v-model="EditRecord.ContainerSn" />
+                                    </div>
+                                </div>
+                            </fieldset>
+
+
+                        </div>
+
+                        <div class="modal-footer-full-width modal-footer">
+                            <button v-if="Status == 'ADD'" class="btn btn-primary" @@click="Add()">新增</button>
+                            <button v-if="Status == 'Edit'" class="btn btn-primary" @@click="Edit()">修改</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+@section Scripts{ 
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script>
+        var app = new Vue({
+            el: "#app",
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],
+                EditRecord: {},
+                RecordItems: [],
+                config: {
+                    altFormat: 'M j, Y',
+                    enableTime: true,
+                    dateFormat: "Y-m-d H:i",
+                },
+                Status: "ADD",
+                Disable: false,
+                Code_no: "",
+                Code_Type: ""
+            },
+            methods: {
+                GetItemName2: function (item) {
+                    var itemName = item.Code_no.substring(4, 6) == "99" && item.Code_Type == "Prod" ? item.ItemName : "";
+                    if (itemName)
+                        return "(" + itemName + ")";
+                    else
+                        return "";
+                },
+                ChangeTypes: function (item) {
+                    if (item == "Waste") return "廢棄物";
+                    if (item == "Prod") return "產品、原料物";
+                },
+                ChangeCode: function () {
+                    var self = this;
+                    var data = self.RecordItems.find(e => e.RecordItemID == self.EditRecord.RecordItemID);
+                    self.Code_no = data.Code_no;
+                    self.Code_Type = data.Code_Type;
+                },
+                GetList: function () {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "取得所有資料",
+                        url: "@Url.Content("~/api/Record/GetRecords")",
+                        data: {No: "@ViewData["No"].ToString()"},
+                        success: function (result) {
+                            self.RecList = result;
+                        }
+                    })
+                },
+                GetItem: function () {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "取得物料名稱",
+                        url: "@Url.Content("~/api/Record/GetSelectItems")",
+                        data: {No: "@ViewData["No"].ToString()"},
+                        success: function (result) {
+                            self.RecordItems = result;
+                        }
+                    })
+                },
+                AddModel: function () {
+                    var self = this;
+                    self.GetItem();
+                    self.Status = "ADD";
+                    if (self.RecordItems.length == 0) return;
+                    self.EditRecord = {};
+                    self.EditRecord.RecordID = 0;
+                    self.EditRecord.RecordItemID = self.RecordItems[0].RecordItemID;
+                    self.Code_no = self.RecordItems[0].Code_no;
+                    self.Code_Type = self.RecordItems[0].Code_Type;
+                    self.EditRecord.Aud_Sch_No = "@ViewData["No"].ToString()";
+                    $("#DataModal").modal("show");
+                },
+                Add: function () {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "新增資料",
+                        url: "@Url.Content("~/api/Record/AddItem")",
+                        data: self.EditRecord,
+                        success: function (result) {
+                            $("#DataModal").modal("hide");
+                            self.GetList();
+                        }
+                    })
+                },
+                EditModel: function (item) {
+                    var self = this;
+                    self.EditRecord = item;
+                    self.Code_no = self.EditRecord.Code_no;
+                    self.Code_Type = self.EditRecord.Code_Type;
+                    self.EditRecord.Aud_Sch_No = "@ViewData["No"].ToString()";
+                    self.Status = "Edit";
+                    $("#DataModal").modal("show");
+                },
+                Edit: function () {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "修改資料",
+                        url: "@Url.Content("~/api/Record/EditItem")",
+                        data: self.EditRecord,
+                        success: function (result) {
+                            $("#DataModal").modal("hide");
+                            self.GetList();
+                        }
+                    })
+                },
+                Delete: function (item) {
+                    var self = this;
+                    self.$http.post({
+                        ApiDesc: "刪除資料",
+                        url: "@Url.Content("~/api/Record/DeleteItem")",
+                        data: { RecordID: item.RecordID },
+                        success: function () {
+                            self.GetList();
+                        }
+                    })
+                }
+
+            },
+            created: function () {
+                var self = this;
+                self.GetList();
+                self.GetItem();
+            }
+
+        })
+    </script>
+}

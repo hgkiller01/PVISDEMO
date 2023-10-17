@@ -1,0 +1,70 @@
+﻿<nav aria-label="Page navigation example">
+    <ul class="pagination float-right">
+        <li class="page-item">
+            <a class="page-link" href="javascript:void(0)" @onclick="() => PreFive()" aria-label="上五頁">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+                <span class="sr-only">上五頁</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="javascript:void(0)" @onclick="() => Pre()" aria-label="上一頁">
+                <span aria-hidden="true">&laquo;</span>
+                <span class="sr-only">上一頁</span>
+            </a>
+        </li>
+        @{
+            List<string> PRCount = new List<string>() { Page.ToString() };
+            for (var i = 1; i <= 5; i++)
+            {
+                int pre = Page - i;
+                if (pre > 0 && pre <= TotalPage)
+                    PRCount.Insert(0, pre.ToString());
+                if (PRCount.Count > 5)
+                    break;
+                pre = Page + i;
+                if (pre > 0 && pre <= TotalPage)
+                    PRCount.Add(pre.ToString());
+                if (PRCount.Count > 5)
+                    break;
+            }
+            if (int.Parse(PRCount[0]) > 1)
+                PRCount.Insert(0, "..");
+            if (int.Parse(PRCount[PRCount.Count - 1]) < TotalPage)
+                PRCount.Add("..");
+
+            @foreach (var item in PRCount)
+            {
+                if (item != "..")
+                {
+                    <li class="page-item @(int.Parse(item) == Page ? "active" : "")">
+                        <a class="page-link" @onclick="() => Change(int.Parse(item))" href="javascript:void(0)">@item</a>
+                    </li>
+
+                }
+                else
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="javascript:void(0)">@item</a>
+                    </li>
+                }
+            }
+        }
+        <li class="page-item">
+            <a class="page-link" href="javascript:void(0)" @onclick="() => Next()" aria-label="下一頁">
+                <span aria-hidden="true">&raquo;</span>
+                <span class="sr-only">下一頁</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="javascript:void(0)" @onclick="() => NextFive()" aria-label="下五頁">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+                <span class="sr-only">下五頁</span>
+            </a>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link">
+                共 @TotalCount 筆/ @TotalPage 頁
+            </span>
+        </li>
+    </ul>
+</nav>

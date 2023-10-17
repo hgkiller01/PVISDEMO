@@ -1,0 +1,381 @@
+﻿@page "/Backend/Review/CompareVue"
+@*@attribute [PvisAuthorize(RoleList.Admin, RoleList.Epa, RoleList.Auditor)]*@
+@{
+  
+}
+@if (Action == "Main")
+{
+    <div class="form-inline inline-box">
+        <label for="CompanyName">處理廠/貯存場機構名稱 </label>
+        <input type="text" id="CompanyName" class="form-control" @bind="CompanyName" />
+        <label for="CompareStatus">
+            <input class="form-control" type="radio" value="true" checked="@(CompareStatus == true)" @onchange="() => CompareStatus = true" id="CompareStatus" />完成比對
+        </label>
+        <label for="CompareStatus2">
+            <input class="form-control" type="radio" value="false" checked="@(CompareStatus == false)" @onchange="() => CompareStatus = false" name="CompareStatus" id="CompareStatus2" />待比對
+        </label>
+        <button @onclick="() => SearchMain()" class="btn btn-outline-primary">
+            搜尋
+        </button>
+    </div>
+    <div class="table-responsive-md">
+        @if (Comparedata != null)
+        {
+
+            <table class="table table-hover  text-center">
+                <thead>
+                    <tr>
+                        <th>處理廠/貯存場機構名稱</th>
+                        <th>稽核行程編號</th>
+                        <th>案場排出申請編號</th>
+                        <th>聯絡人</th>
+                        <th>排出登記數量</th>
+                        <th>
+                            已掃描條碼
+                            存檔數量
+                        </th>
+                        <th>狀態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Comparedata)
+                    {
+                        <tr>
+                            <td>@item.CompanyName</td>
+                            <td>@item.Aud_Sch_No</td>
+                            <td>@item.bookingno</td>
+                            <td>@item.contact</td>
+                            <td>@item.SnoCount</td>
+                            <td>@item.BookingCount</td>
+                            <td>@(item.Compare_State.HasValue && item.Compare_State.Value ? "完成比對" : "待比對")</td>
+                            <td>
+                                @if (item.Compare_State.HasValue && item.Compare_State.Value)
+                                {
+                                    <button @onclick='() => ChangeSubPage(item,1,"View")' class="btn btn-outline-info">檢視</button>
+                                }
+                                else
+                                {
+                                    <button @onclick='() => ChangeSubPage(item,1,"Sub")' class="btn btn-outline-primary">比對</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <Pagination Page="MainNowPage" TotalCount="MainTotalCount" PageSize="Pagesize" ChangeResult="(e) => GetMainPage(e)"></Pagination>
+        }
+        else
+        {
+            <h2>讀取中........</h2>
+        }
+    </div>
+}
+@if (Action == "Sub" || Action == "View")
+{
+    <div class="row">
+
+        <div class="col-12">
+            <div class="form-inline inline-box">
+                <button @onclick="() => SearchMain()" class="btn btn-primary">回上一頁</button>
+                @if (Action == "Sub")
+                {
+                    <button @onclick='() => { ShowScanBarcode = !ShowScanBarcode; JS.InvokeVoidAsync("showModal"); }' class="btn btn-danger">掃瞄比對</button>
+                    <button @onclick="() => { IFedit = true ; ShowResultModal = true; }" class="btn btn-success">手動輸入</button>
+                }
+
+            </div>
+
+        </div>
+        <div class="col-12">
+            稽核行程編號:@comparevm.Aud_Sch_No
+        </div>
+        <div class="col-12">
+            案場排出登記申請編號:@comparevm.bookingno
+        </div>
+    </div>
+    <div class="form-inline inline-box">
+        比對結果:
+        <label for="status1">
+            <input type="radio" id="status1" checked="@(status == "1")" value="1" name="status" @onchange='() => status = "1"' />
+            一致
+        </label>
+        <label for="status2">
+            <input type="radio" id="status2" checked="@(status == "2")" value="2" name="status" @onchange='() => status = "2"' />
+            不一致
+        </label>
+        <label for="status3">
+            <input type="radio" id="status3" checked="@(status == "3")" value="3" name="status" @onchange='() => status = "3"' />
+            尚未比對
+        </label>
+        <button class="btn btn-outline-primary" @onclick="() => SearchSub()">搜尋</button>
+    </div>
+    <div class="table-responsive-md">
+        @if (compare_Details != null)
+        {
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>排出登記廢太陽光電板序號</th>
+                        <th>登記有無鋁框</th>
+                        <th>條碼掃讀結果</th>
+                        <th>現場稽核結果</th>
+                        <th>比對結果</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in compare_Details)
+                    {
+                        <tr>
+                            <td>
+                                @item.Sno<br />
+
+                            </td>
+                            <td>
+                                @if (item.SpAl_frame == "1")
+                                {
+                                    <span>有鋁框</span>
+                                }
+                                else if (item.SpAl_frame == "0")
+                                {
+                                    <span>無鋁框</span>
+                                }
+                            </td>
+                            <td>
+                                @item.Compare_Sno
+                            </td>
+                            <td>
+                                @if (item.Al_frame == "1")
+                                {
+                                    <span>有鋁框</span>
+                                }
+                                else if (item.Al_frame == "0")
+                                {
+                                    <span>無鋁框</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Status.HasValue)
+                                {
+                                    @if (item.Status.Value)
+                                    {
+                                        <span>一致</span>
+                                    }
+                                    else
+                                    {
+                                        <span>不一致</span>
+                                    }
+
+                                }
+                                else
+                                {
+                                    <span>尚未比對</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (Action == "Sub")
+                                {
+                                    @*是否已經比對*@
+                                    @if (item.Status.HasValue)
+                                    {
+                                        @*已經比對*@
+                                        @if (item.CDID != null)
+                                        {
+                                            <button @onclick="() => CodeData = item.Clone() as CompareVm2" class="btn btn-success">掃讀修改</button>
+                                            <button @onclick="() => DeleteCode(item.CDID)" class="btn btn-danger">刪除</button>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @*尚未比對*@
+                                        @if (item.Spid != null)
+                                        {
+                                            <button @onclick="() => SnoData = item.Clone() as CompareVm2" class="btn btn-primary">登記修改</button>
+                                        }
+                                    }
+                                }
+
+
+
+                            </td>
+                            <td>
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+            <Pagination Page="SubNowPage" TotalCount="SubTotalCount" PageSize="Pagesize" ChangeResult="(e) => GetSubPage(e)"></Pagination>
+        }
+        else
+        {
+            <h2>讀取中........</h2>
+        }
+    </div>
+    <div>
+        <span class="h3">比對結果：</span> <br />
+        @{
+            var right = compare_all.Where(x => (x.Status.HasValue ? x.Status.Value : false) == true);
+            var wrong = compare_all.Where(x => (x.Status.HasValue ? x.Status.Value : true) == false);
+            int NoHave = compare_all.Where(x => !x.Status.HasValue).Count();
+        }
+        <span class="h4">
+            一致共 @right.Count() 筆，其中有鋁框 @right.Where(x => x.Al_frame == "1").Count()
+            筆，無鋁框 @right.Where(x => x.Al_frame == "0").Count() 筆
+        </span><br />
+        <span class="h4">
+            不一致共 @wrong.Count() 筆，其中有鋁框 @wrong.Where(x => x.Al_frame == "1").Count()
+            筆，無鋁框 @wrong.Where(x => x.Al_frame == "0").Count() 筆
+        </span><br />
+        <span class="h4">尚未比對共 @NoHave 筆</span>
+    </div>
+    @if (Action == "Sub")
+    {
+        <div class="row">
+            <div class="col-12 text-center">
+                <button @onclick="CompareComplete" class="btn-lg btn-success">完成比對</button>
+            </div>
+
+        </div>
+    }
+
+}
+@if (ShowScanBarcode)
+{
+    <BarcodeReader ScanResult="(e) => Scan(e)"
+                   ShowScanBarcode="ShowScanBarcode" Close="() => ShowScanBarcode = !ShowScanBarcode"></BarcodeReader>
+}
+@if (ShowResultModal)
+{
+    <div class="modal fade show" id="exampleModal" tabindex="-1" style="display:block" role="dialog" aria-modal="true" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+
+            <div class="modal-content">
+                <div style="background-color:aqua;" class="modal-body">
+                    @if (IFedit)
+                    {
+                        <label for="barCode">現場稽核序號</label>
+                        <input class="form-control form-control-lg" placeholder="輸入序號" id="barCode" type="text" @bind-value="ScanResult" />
+                        @if (ReqStr)
+                        {
+                            <div style="color:red;">
+                                <span>序號必填!</span>
+                            </div>
+                        }
+
+                    }
+                    else
+                    {
+                        <h2>刷讀結果:@CompareSno() </h2>
+                    }
+
+                </div>
+                <div class="modal-footer">
+                    @if (CompareResultStatus.HasValue || IFedit)
+                    {
+                        <button type="button" @onclick='() => AddCompareDetail("1")' data-dismiss="modal" class="btn btn-primary">存檔-有鋁框</button>
+                        <button type="button" @onclick='() => AddCompareDetail("0")' class="btn btn-secondary" data-dismiss="modal">存檔-無鋁框</button>
+                    }
+                    <button class="btn btn-dark" @onclick='() => { ShowResultModal = !ShowResultModal; JS.InvokeVoidAsync("closeModal");ScanResult = ""; IFedit = false; }'>關閉</button>
+                    @if (AfterScan)
+                    {
+                        <button type="button" @onclick='() => { ShowScanBarcode = !ShowScanBarcode; ShowResultModal = !ShowResultModal;ScanResult = ""; IFedit = false; }' class="btn btn-danger" data-dismiss="modal">重新刷讀</button>
+
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--End Modal-->
+}
+@if (CodeData != null)
+{
+    <div class="modal fade show" id="exampleModal" tabindex="-1" style="display:block" role="dialog" aria-modal="true" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-title">
+                    修改刷讀結果
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="Compare_Sno">刷讀結果：</label>
+                            <input id="Compare_Sno" class="form-control-lg" type="text" @bind-value="CodeData.Compare_Sno" />
+                            @if (HasInputCode)
+                            {
+                                <div class="text-danger">
+                                    條碼必填
+                                </div>
+                            }
+                            @if (isRight)
+                            {
+                                <div class="text-danger">
+                                    條碼重複
+                                </div>
+                            }
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label for="Al_frame">是否有鋁框：</label>
+                            <select id="Al_frame" class="form-control-lg" @bind="CodeData.Al_frame">
+                                <option value="1">有</option>
+                                <option value="0">無</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-warning" @onclick="() => { CodeData = null; HasInputCode = false; isRight = false; }">取消</button>
+                    <button class="btn btn-success" @onclick="() => ChangeCode()">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@if (SnoData != null)
+{
+    <div class="modal fade show" id="exampleModal" tabindex="-1" style="display:block" role="dialog" aria-modal="true" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-title">
+                    修改太陽能光電版序號
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="Compare_Sno">序號：</label>
+                            <input id="Compare_Sno" class="form-control-lg" type="text" @bind-value="SnoData.Sno" />
+                            @if (HasInputCode)
+                            {
+                                <div class="text-danger">
+                                    序號必填
+                                </div>
+                            }
+                            @if (isRight)
+                            {
+                                <div class="text-danger">
+                                    序號重複
+                                </div>
+                            }
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label for="Al_frame">是否有鋁框：</label>
+                            <select id="Al_frame" class="form-control-lg" @bind="SnoData.SpAl_frame">
+                                <option value="1">有</option>
+                                <option value="0">無</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-warning" @onclick="() => { SnoData = null; HasInputCode = false; isRight = false; }">取消</button>
+                    <button class="btn btn-success" @onclick="() => ChangeSno()">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,448 @@
+﻿@page
+@{
+    ViewData["Title"] = "稽核行程申請";
+}
+<div id="app" v-cloak>
+    <environment include="Development">
+        <pre>{{Rec|json}}</pre>
+        <pre>{{Qry|json}}</pre>
+    </environment>
+    <div class="form-inline inline-box">
+        <label for="Dt" class="control-label ml-4">預定允收日期:</label>
+        <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+        ～<flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+        <label class="control-label ml-4">使用狀態:</label>
+        <label><input type="radio" v-model.number="Qry.Aud_State" value="1" />填寫中</label>
+        <label><input type="radio" v-model.number="Qry.Aud_State" value="S" />提出申請</label>
+        <label><input type="radio" v-model.number="Qry.Aud_State" value="M" />待補正</label>
+        <label><input type="radio" v-model.number="Qry.Aud_State" value="N" />不通過</label>
+        <label><input type="radio" v-model.number="Qry.Aud_State" value="Y1" />通過</label>
+        <div class="m-auto"></div>
+        <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        <input type="button" value="新增資料" @@click="Edit('ADD','','')" class="btn btn-outline-primary" />
+    </div>
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center">
+            <thead>
+                <tr>
+                    <th>稽核行程編號</th>
+                    <th>允收稽核日期</th>
+                    <th>允收稽核預定停留時間(分鐘)</th>
+                    <th>處理稽核日期</th>
+                    <th>處理稽核預定停留時間(分鐘)</th>
+                    <th>預定數量</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{item.Aud_Sch_No}}</td>
+                    <td>{{item.Pre_Date | formatDate}}</td>
+                    <td>{{item.Pre_Minute}}</td>
+                    <td>{{item.Tre_Pre_Date | formatDate}}</td>
+                    <td>{{item.Tre_Pre_Minute}}</td>
+                    <td>{{item.Pre_Qry}}</td>
+                    <td>{{GetStatus(item.Aud_State)}}</td>
+                    <td>
+                        <input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item);" />
+                        <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit('Edit',item,index+pageStart);" v-if="item.Aud_State == '1' || item.Aud_State ==  'M'" />
+                        <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(item);" tabindex="-1" v-if="item.Aud_State == 'N'" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div><!-- 查詢結果 -->
+    <div class="text-right">
+        <partial name="_PagerRecListPartial" />
+    </div><!-- 分頁控制 -->
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title"><span v-if="Rec.Pid > 0"> [編輯]{{Rec.Aud_Sch_No}}</span></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div v-if="Edited" class="form-inline inline-box">
+                    <label for="City" class="control-label">進廠時間:</label>
+                    <div class="col-md-9">
+                        <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control w-8" id="StartDt"></flat-pickr>~
+                        <flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control w-8" id="EndDt"></flat-pickr>
+                    </div>
+                    <div class="m-auto"></div>
+                    <input type="button" value="搜尋" @@click="GetSBList(Qry)" class="btn btn-outline-success" />
+                </div>
+                <div class="table-responsive-md">
+                    <table class="table table-hover text-center">
+                        <thead>
+                            <tr>
+                                <th>案場排出登記表申請編號</th>
+                                <th>聯絡人名稱</th>
+                                <th>數量</th>
+                                <th>進廠日期</th>
+                                <th v-if="!Rec.Pid">勾選申請</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(Sitem,index) in RecSchSBList.slice(pageViewStart, pageViewStart + countViewOfPage)">
+                                <td>{{Sitem.Bookingno}}</td>
+                                <td>{{Sitem.UserName}}</td>
+                                <td>{{Sitem.Qty}}</td>
+                                <td>{{Sitem.Enter_Date | formatDate}}</td>
+                                <td v-if="!Rec.Pid"><input type="checkbox" class="form-check-input" :value="Sitem.Bookingno" v-model="Bno" id="Bno" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <environment include="Development">
+                        <pre>{{Bno|json}}</pre>
+                    </environment>
+                </div><!-- 查詢結果 -->
+                <div class="text-right">
+                    <partial name="_PagerRecViewListPartial" />
+                </div>
+                <!-- 分頁控制 -->
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label for="Pre_Date" class="col-md-3 col-form-label">允收稽核時間</label>
+                        <div class="col-md-9">
+                            <flat-pickr v-model="Rec.Pre_Date" :config="FlatPickrTimeCfg" placeholder="允收稽核時間" name="FlatPickrTimeCfg" class="form-control w-12" id="Pre_Date" readonly></flat-pickr>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="Tre_Pre_Date" class="col-md-3 col-form-label">處理稽核時間</label>
+                        <div class="col-md-9">
+                            <flat-pickr v-model="Rec.Tre_Pre_Date" :config="FlatPickrTimeCfg" placeholder="處理稽核時間" name="FlatPickrTimeCfg" class="form-control w-12" id="Tre_Pre_Date" readonly></flat-pickr>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @@click="Save(Rec,Bno);">存檔</button>
+                        <button type="button" class="btn btn-primary" @@click="Apply(Rec);" v-if="Rec.Pid">提出申請</button>
+                        <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- 編輯框 -->
+    <div id="ViewDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[檢視]<span v-if="Rec.Pid > 0"> {{Rec.Aud_Sch_No}}</span></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a data-toggle="tab" href="#sb1" role="tab" class="nav-item nav-link active">清理資訊</a>
+                        <a data-toggle="tab" href="#sb2" role="tab" class="nav-item nav-link">確認資料</a>
+                    </div>
+                    <div class="tab-content tab-content-border" style="height: 640px; overflow-y: auto">
+                        <div id="sb1" role="tabpanel" class="tab-pane active">
+                            <div class="table-responsive-md">
+                                <table class="table table-hover text-center">
+                                    <thead>
+                                        <tr>
+                                            <th>案場排出登記表申請編號</th>
+                                            <th>聯絡人名稱</th>
+                                            <th>數量</th>
+                                            <th>進廠日期</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(Sitem,index) in RecSchSBList.slice(pageViewStart, pageViewStart + countViewOfPage)">
+                                            <td>{{Sitem.Bookingno}}</td>
+                                            <td>{{Sitem.UserName}}</td>
+                                            <td>{{Sitem.Qty}}</td>
+                                            <td>{{Sitem.Enter_Date | formatDate}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div><!-- 查詢結果 -->
+                            <div class="text-right">
+                                <partial name="_PagerRecViewListPartial" />
+                            </div>
+                            <br /><br /><br />
+                            <!-- 分頁控制 -->
+
+                            <div class="form-group row">
+                                <label for="Aud_Date_r" class="col-md-3 col-form-label">允收稽核時間</label>
+                                <div class="col-md-9">
+                                    <flat-pickr v-model="Rec.Pre_Date" :disabled="DateDisable" :config="FlatPickrTimeCfg" placeholder="允收稽核時間" name="FlatPickrTimeCfg" class="form-control w-12" id="Aud_Date_r" readonly></flat-pickr>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="Pre_Date_r" class="col-md-3 col-form-label">處理稽核時間</label>
+                                <div class="col-md-9">
+                                    <flat-pickr v-model="Rec.Tre_Pre_Date" :disabled="DateDisable" :config="FlatPickrTimeCfg" placeholder="處理稽核時間" name="FlatPickrTimeCfg" class="form-control w-12" id="Pre_Date_r" readonly></flat-pickr>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+
+                            </div>
+                        </div>
+                        <div id="sb2" role="tabpanel" class="tab-pane">
+                            <table class="table table-sm table-bordered" v-if="ReviewList.length > 0">
+                                <tr class="text-center bg-gray-200">
+                                    <th class="w-7">確認者</th>
+                                    <th class="w-7">確認日期</th>
+                                    <th>確認意見</th>
+                                </tr>
+                                <tr v-for="r in ReviewList">
+                                    <td>{{r.Check_Name}}</td>
+                                    <td>{{r.Check_Date | formatDate}}</td>
+                                    <td>
+                                        <div v-if="r.Status == 'Y1'">
+                                            通過
+                                        </div>
+                                        <div v-if="r.Status == 'M' || r.Status == 'N'">
+                                            {{r.Status == 'M' ? '補正' : '不通過'}}，
+                                            {{r.Check_opinion}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div><!-- 檢視框 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/MixinPagerRecViewList.js"></script>
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>
+    </environment>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList, MixinPagerRecViewList],
+            data: {
+                RecList: [],
+                RecSchSBList: [],
+                AttList: [],
+                Rec: {},
+                RecV: {},
+                Qry: {},
+                Bno: [],
+                Review: {},
+                ReviewList: [],
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+                FlatPickrTimeCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 1,
+                    enableTime: true,
+                    dateFormat: "Y-m-d H:i"
+                },
+                DateDisable: false,
+                Edited: false
+            },
+            methods: {
+
+                GetStatus: function (Dat) {
+                    if (!Dat) return;
+                    var _Status = '';
+                    if (Dat == "1") _Status = '填寫中';
+                    if (Dat == "S") _Status = '提出申請';
+                    if (Dat == "M") _Status = '待補正';
+                    if (Dat == "N") _Status = '審核不通過';
+                    if (Dat == "Y1") _Status = '通過';
+                    return _Status;
+                },
+
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/ScheduleAuditApply/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/ScheduleAuditApply/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+
+                GetSBList: function (Qry) {
+                    var me = this;
+                    me.RecSchSBList = [];
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/ScheduleAuditApply/GetSBList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecSchSBList = _Result;
+                        }
+                    });
+                },
+
+                Edit: function (action,item, index) {
+                    var me = this;
+                    me.RecSchSBList = [];
+                    me.Rec = item || {
+                        Uid: "0"
+                    };
+                    if (action == 'Edit') {
+                        me.Edited = false;
+                    } else {
+                        me.Bno = [];
+                        me.Edited = true;
+                    }
+                    me.DateDisable = false;
+                    $('#ModifyDialog').modal("show");
+                    if (!this.Rec.Pid) return;
+                    this.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Content("~/api/ScheduleAuditApply/GetItem")",
+                        data: {
+                            Pid: this.Rec.Pid
+                        },
+                        success: function (_Result) {
+                            me.Rec = _Result.Rec;
+                            me.RecSchSBList = _Result.RecSchSBList;
+                            me.Rec.EditIndex = index;
+                        }
+                    });
+                },
+
+                /**
+                 * 基本表單前端資料檢核
+                 * @@param { any } Rec 主要申請資料表
+                 * @@returns { Array } 錯誤明細清單
+                 */
+                FormCheck: function (Rec) {
+                    var errors = [];
+
+                    if (!Rec.Pre_Date) errors.push("『允收稽核日期』未填寫");
+                    if (!Rec.Tre_Pre_Date) errors.push("『處理稽核日期』未填寫");
+
+                    return errors;
+                },
+                /**
+                 * 案件送出
+                 * @@param { any } Rec 主要申請資料表
+                 */
+                Save: function (Rec, Bno) {
+                    var me = this;
+                    var errors = me.FormCheck(Rec);
+                    if (errors.length) {
+                        UiHelper.ClearMsg().ShowErr(errors, 6000);
+                        return;
+                    }
+                    RecAll = { 'Rec': Rec, 'Bno': Bno }
+                    this.$http.post({
+                        ApiDesc: "資料存檔",
+                        url: "@Url.Content("~/api/ScheduleAuditApply/Save")",
+                        data: RecAll,
+                        success: function (_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+
+                                me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                            } else {
+                                me.RecList.unshift(_Result.Rec);
+                            }
+                            me.GetList({});
+                            $('#ModifyDialog').modal("hide");
+                        }
+                    });
+                },
+
+                Apply: function (Rec, Bno) {
+                    var me = this;
+                    var errors = me.FormCheck(Rec);
+                    if (errors.length) {
+                        UiHelper.ClearMsg().ShowErr(errors, 6000);
+                        return;
+                    }
+                    RecAll = { 'Rec': Rec, 'Bno': Bno }
+                    me.Rec.Aud_State = "S";
+                    this.$http.post({
+                        ApiDesc: "資料存檔",
+                        url: "@Url.Content("~/api/ScheduleAuditApply/Save")",
+                        data: RecAll,
+                        success: function (_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+
+                                me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                            } else {
+                                me.RecList.unshift(_Result.Rec);
+                            }
+                            me.GetList({});
+                            $('#ModifyDialog').modal("hide");
+                        }
+                    });
+                },
+
+               View: function (item) {
+                    var me = this;
+                    me.Rec = item;
+                    me.DateDisable = true;
+                    me.$http.post({
+                        ApiDesc: '單筆資料載入',
+                        url: '@Url.Action("View", "ScheduleAuditApply")',
+                        data: {
+                            Pid : item.Pid
+                        } ,
+                        success: function (result) {
+                            me.RecV = result.Rec;
+                            me.RecSchSBList = result.RecSchSBList;
+                            me.ReviewList = result.ReviewList;
+                            $('#ViewDialog').modal('show');
+                            $('#nav-tab a:eq(0)').tab('show');
+                        }
+                    });
+                },
+                Delete: function (item) {
+                    var self = this;
+                    if (confirm("刪除後將釋出本案已勾選的案場排出登記表申請編號，請重新建立稽核行程。")) {
+                        self.$http.post({
+                            ApiDesc: "刪除資料",
+                            url: "@Url.Content("~/api/ScheduleAuditApply/DeleteItem")",
+                            data: {
+                                Aud_Sch_No: item.Aud_Sch_No
+                            },
+                            success: function () {
+                                self.Load();
+                            }
+                        })
+                    }
+
+                }
+            },
+
+            created: function () {
+                var self = this;
+                this.GetList(self.Qry);
+            }
+        });
+
+    </script>
+}

@@ -1,0 +1,181 @@
+﻿@using Pvis.Biz.Extension
+
+<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+    <!-- Sidebar - Brand -->
+    <li>
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="~/BackEnd">
+            <span class="sidebar-brand-icon rotate-n-15">
+                <i class="fas fa-sun"></i>
+            </span>
+            <span class="sidebar-brand-text mx-4">廢太陽光電板 回收系統</span>
+        </a>
+    </li>
+
+    <!-- Divider -->
+    <li><hr class="sidebar-divider"></li>
+
+    <!-- Nav Item - Pages Collapse Menu -->
+    @if (User.HasRole(RoleList.Admin, RoleList.Company))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideCompany1" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-id-card"></i>
+                <span>基本資料設定</span>
+            </a>
+            <div id="sideCompany1" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" asp-page="/profile/PvInfoVue">設備登記資料維護</a>
+                    <a class="collapse-item" asp-page="/profile/StoreAddressVue">存放地點資料維護</a>
+                    <a class="collapse-item" asp-page="/profile/SpInfoVue">太陽光電板資料維護</a>
+                </div>
+            </div>
+        </li>
+    }
+    @if (User.HasRole(RoleList.Admin, RoleList.Company, RoleList.Teart, RoleList.Store))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideCompany2" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-edit"></i>
+                <span>申請表單</span>
+            </a>
+            <div id="sideCompany2" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    @if (User.HasRole(RoleList.Admin, RoleList.Company))
+                    {
+                        <a class="collapse-item" asp-page="/Apply/ScrapBookingVue">案場排出登記表</a>
+                        <a class="collapse-item" asp-page="/Apply/ScheduleDocVue">上傳清理合約</a>
+                    }
+                    @if (User.HasRole(RoleList.Admin, RoleList.Teart, RoleList.Store))
+                    {
+                        <a class="collapse-item" asp-page="/Apply/SchedulePayBackVue">清理回報</a>
+                        <a class="collapse-item" asp-page="/Apply/ScheduleAuditApplyVue">稽核行程申請</a>
+                        <a class="collapse-item" asp-page="/Apply/AuditOperationVue">稽核表單</a>
+                    }
+                </div>
+            </div>
+        </li>
+    }
+
+    @if (User.HasRole(RoleList.Admin, RoleList.Auditor))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideAuditor1" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-calendar-check"></i>
+                <span>審查確認</span>
+            </a>
+            <div id="sideAuditor1" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" asp-page="/Review/ScrapBookingVue">案場排出登記表</a>
+                    <a class="collapse-item" asp-page="/Review/AuditOperationReview">稽核表單</a>
+                    <a class="collapse-item" asp-page="/Review/ProofSingleVue">稽核量</a>
+                    <a class="collapse-item" href="@Url.Content("~/BackEnd/Review/CompareVue")">序號比對</a>
+                </div>
+            </div>
+        </li>
+    }
+
+    @if (User.HasRole(RoleList.Admin, RoleList.Epa, RoleList.Auditor))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideSchedule1" aria-expanded="true" aria-controls="collapsePages">
+                <i class="far fa-fw fa-calendar-alt"></i>
+                <span>行程管理</span>
+            </a>
+            <div id="sideSchedule1" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" asp-page="/Apply/ScheduleVue">清理行程管理</a>
+                    <a class="collapse-item" asp-page="/Apply/ScheduleAuditVue">稽核行程管理</a>
+                </div>
+            </div>
+        </li>
+    }
+
+    @if (User.HasRole(RoleList.Admin, RoleList.Epa, RoleList.Auditor))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideStat1" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-chart-bar"></i>
+                <span>統計查詢</span>
+            </a>
+            <div id="sideStat1" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" asp-page="/profile/PvListVue">設備登記資料</a>
+                    <a class="collapse-item" asp-page="/profile/ModuleFacListVue">模組製造業名單</a>
+                    <a class="collapse-item" asp-page="/profile/CustomsVue">海關進口資料</a>
+                </div>
+            </div>
+        </li>
+    }
+
+    @if (User.HasRole(RoleList.Admin, RoleList.Epa, RoleList.Auditor))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideAudit1" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-cube"></i>
+                <span>勾稽比對</span>
+            </a>
+            <div id="sideAudit1" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" asp-page="/profile/AuditPvVue">設備登記資料</a>
+                    <a class="collapse-item" asp-page="/profile/AuditSpVue">太陽光電板序號</a>
+                </div>
+            </div>
+        </li>
+    }
+
+    @if (User.HasRole(RoleList.Admin, RoleList.Epa, RoleList.Auditor))
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideEpa1" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-wrench"></i>
+                <span>系統管理</span>
+            </a>
+            <div id="sideEpa1" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    @if (User.HasRole(RoleList.Admin, RoleList.Epa))
+                    {
+                        <a class="collapse-item" asp-page="/Mgr/NewsModify">最新消息</a>
+                        <a class="collapse-item" asp-page="/Mgr/SpInfoImportVue">太陽光電板管理功能</a>
+                        <a class="collapse-item" asp-page="/Mgr/AccountMgr">帳號管理</a>
+                        <a class="collapse-item" asp-page="/Mgr/AccountAppReview">帳號申請審查</a>
+                        <a class="collapse-item" asp-page="/Mgr/Organ">清除處理機構</a>
+                        <a class="collapse-item" asp-page="/Mgr/QnA">問與答</a>
+
+                    }
+                    @if (User.HasRole(RoleList.Admin, RoleList.Auditor))
+                    {
+                        <a class="collapse-item" asp-page="/Mgr/ClearLocation">自行清運地點</a>
+                    }
+                    @if (User.HasRole(RoleList.Admin))
+                    {
+                        <a class="collapse-item" asp-page="/Mgr/SetSysConfig">參數設定</a>
+                    }
+                </div>
+            </div>
+        </li>
+    }
+    @if (User.Identity.IsAuthenticated)
+    {
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sideIsLogin" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-file"></i>
+                <span>檔案下載</span>
+            </a>
+            <div id="sideIsLogin" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" asp-page="/Download/Manual">操作手冊下載</a>
+                </div>
+            </div>
+        </li>
+    }
+
+    <!-- Divider -->
+    <li><hr class="sidebar-divider d-none d-md-block"></li>
+
+    <!--Sidebar Toggler (Sidebar) -->
+    <li class="text-center d-none d-md-inline">
+        <input type="button" class="rounded-circle border-0" aria-hidden="true" alt="收起" id="sidebarToggle">
+    </li>
+
+</ul>

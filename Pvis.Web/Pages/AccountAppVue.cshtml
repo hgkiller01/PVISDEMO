@@ -1,0 +1,391 @@
+﻿@page
+@model Pvis.Web.Pages.AccountAppVueModel
+@{
+    ViewData["Title"] = "帳號申請";
+}
+@section heads{
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/css/alertify.min.css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/css/themes/bootstrap.min.css" />
+    <link rel="stylesheet" href="//unpkg.com/@@trevoreyre/autocomplete-vue/dist/style.css" />
+    <style>
+        .alertify-notifier .ajs-message {
+            text-align: left;
+        }
+
+        .req {
+            color: crimson;
+        }
+    </style>
+}
+<div class="col" id="AppForm">
+    <form asp-antiforgery="true">
+        <div class="form-group" id="app">
+            <fieldset>
+                <legend> <label>申請角色別</label></legend>
+                <div class="form-check">
+                    <label class="form-check-label" for="UserRole1">
+                        <input type="radio" class="form-check-input" name="UserRole" id="UserRole1" value="@((byte)AppRoleList.AppPersonal)" v-model.number="Rec.UserRole" />
+                        {{@((int)AppRoleList.AppPersonal)|DisplayName(AppRoleCode)}}
+                    </label>
+                </div>
+                <div class="form-check">
+                    <label class="form-check-label" for="UserRole2">
+                        <input type="radio" class="form-check-input" name="UserRole" id="UserRole2" value="@((byte)AppRoleList.AppCompany)" v-model.number="Rec.UserRole" />
+                        {{@((int)AppRoleList.AppCompany)|DisplayName(AppRoleCode)}}
+                    </label>
+                </div>
+                <div class="form-check">
+                    <label class="form-check-label" for="UserRole3">
+                        <input type="radio" class="form-check-input" name="UserRole" id="UserRole3" value="@((byte)AppRoleList.AppStore)" v-model.number="Rec.UserRole" />
+                        {{@((int)AppRoleList.AppStore)|DisplayName(AppRoleCode)}}
+                    </label>
+                </div>
+                <div class="form-check">
+                    <label class="form-check-label" for="UserRole4">
+                        <input type="radio" class="form-check-input" name="UserRole" id="UserRole4" value="@((byte)AppRoleList.AppTreat)" v-model.number="Rec.UserRole" />
+                        {{@((int)AppRoleList.AppTreat)|DisplayName(AppRoleCode)}}
+                    </label>
+                </div>
+            </fieldset>
+
+
+        </div>
+        <div v-show="Rec.UserRole">
+            <div class="row">
+                <div class="form-group col-md-4">
+                    <label for="UserName">帳號申請者姓名<span class="req">*必填</span></label>
+                    <input type="text" aria-role="alert" class="form-control" ref="UserName" id="UserName" v-model.trim="Rec.UserName" placeholder="帳號申請者姓名" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="Tel">帳號申請者聯絡電話<span class="req">*必填</span></label>
+                    <input type="tel" aria-role="alert" class="form-control" id="Tel" ref="Tel" v-model.trim="Rec.Tel" placeholder="帳號申請者聯絡電話" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="Email">帳號申請者E-MAIL<span class="req">*必填</span></label>
+                    <input type="email" aria-role="alert" class="form-control" id="Email" ref="Email" title="帳號申請者E-MAIL" v-model.trim="Rec.Email" placeholder="帳號申請者E-MAIL" />
+                </div>
+            </div>
+            <div class="row" v-show="IsVendor">
+                <div class="form-check col-md-4">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" v-model="Rec.IsNotOwner">
+                        非案場業者所有人(委託申請)
+                    </label>
+                </div>
+                <div class="col-md-8" v-show="Rec.IsNotOwner">
+                    <div class="form-group">
+                        <label for="FileLetterOfProxy">授權委託書<span class="req">*必填</span></label>(<a href="~/pubFile/案場委託資訊系統操作作業_授權委託書.odt" title="案場委託資訊系統操作作業_授權委託書.odt" target="_blank">授權委託書下載</a>)
+                        <input type="file" aria-role="alert" class="form-control-file" id="FileLetterOfProxy" @@change="FileUpLoadChange($event,Attached.LetterOfProxy,'授權委託書')" />
+
+                    </div>
+                    <div class="form-group">
+                        <label for="SameAs"><input type="checkbox" class="form-check-input" id="SameAs" v-on:click="handleClick" />同上</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="CaseName">案場所有人姓名<span class="req">*必填</span></label>
+                        <input type="text" aria-role="alert" class="form-control" ref="CaseName" id="CaseName" v-model.trim="Rec.CaseName" placeholder="案場所有人姓名" />
+                    </div>
+                    <div class="form-group">
+                        <label for="CaseEmail">案場所有人E-mail<span class="req">*必填</span></label>
+                        <input type="email" aria-role="alert" class="form-control" ref="CaseEmail" id="CaseEmail" v-model.trim="Rec.CaseEmail" placeholder="案場所有人E-mail" />
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" v-show="IsShowCompanyName">
+                <label for="CompanyName">案場所有人機構名稱<span class="req">*必填</span></label>
+                <input type="text" aria-role="alert" class="form-control" ref="CompanyName" id="CompanyName" v-model="Rec.CompanyName" placeholder="請輸入完整機構名稱" />
+            </div>
+            <div class="form-group">
+                <label for="Address">{{LabelAddress}}<span class="req">*必填</span></label>
+                <autocomplete :search="search"
+                              placeholder="請輸入完整地址"
+                              aria-label="請輸入完整地址" @@change="handleInput($event,Rec,'Address')" :default-value="Rec.Address" id="Address"></autocomplete>
+
+                <div class="text-warning">
+                    請用正體字填寫，地址:臺北市萬華區中華路1段83號，地號:臺北市中正區永昌段00-01地號
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-4" v-show="IsShowEuicNo">
+                    <label for="EuicNo">事業廢棄物管制編號<span class="req">*必填</span></label>
+                    <input type="text" aria-role="alert" class="form-control text-center" ref="EuicNo" id="EuicNo" v-model.trim="Rec.EuicNo" style="width:8rem;" maxlength="8" placeholder="管制編號" />
+                </div>
+            </div>
+            <div class="row col-md-12" v-show="IsVendor">
+                <div class="form-group">
+                    <label for="FileLetterOfAgreement">設備登記同意函<span class="req">*必填</span></label>
+                    <input type="file" aria-role="alert" class="form-control-file" id="FileLetterOfAgreement" @@change="FileUpLoadChange($event,Attached.LetterOfAgreement,'設備登記同意函')" />
+                </div>
+            </div>
+            <div class="row col-md-12" v-show="Rec.UserRole === @((byte)AppRoleList.AppStore)">
+                <div class="form-group">
+                    <label for="FileApprovalOfInstallations">貯存場設置核准函<span class="req">*必填</span></label>
+                    <input type="file" aria-role="alert" class="form-control-file" id="FileApprovalOfInstallations" @@change="FileUpLoadChange($event,Attached.ApprovalOfInstallations,'貯存場設置核准函')" />
+                </div>
+            </div>
+            <div class="row form-inline">
+                <div class="col-md-12 text-end">
+                    <label class="form-control-label d-md-inline-block" for="CaptchaCode">圖形驗證碼<span class="req">*必填</span></label>
+                    <a href="javascript:void(0)">
+                        <img :src="CaptchaUrl" alt="圖形驗證碼" @@click="ReNewCaptcha" style="margin-right:0.2rem;" />
+                    </a>
+                    <a alt="播放驗證碼" href="javascript:void(0)" title="播放驗證碼" @@click.prevent="VoicePlay()" @@keypress.prevent="VoicePlay()">
+                        <img alt="播放驗證碼" src="~/img/play.png" />
+                    </a>
+                    <input type="text" aria-role="alert" id="CaptchaCode" ref="CaptchaCode" class="form-control form-control-lg d-md-inline-block text-center" placeholder="驗證碼" style="width: 7rem;" v-model="Rec.CaptchaCode" maxlength="4" />
+                    <input type="button" class="btn btn-lg btn-primary" value="送出資料" @@click="SendApply(Rec ,Attached )" />
+                </div>
+            </div>
+            <div class="text-warning text-end">
+                <span>來源IP:@HttpContext.Connection.RemoteIpAddress.ToString()</span>，
+                請輸入您圖形看到的文字，若無法辨識驗證碼，點擊圖形可重新產生驗證碼。
+            </div>
+        </div>
+    </form>
+</div>
+@section Scripts{
+    <script src="//cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/es6-promise@4.2.6/dist/es6-promise.auto.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/axios@0.18.0/dist/axios.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.11.4/build/alertify.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/block-ui@2.70.1/jquery.blockUI.js"></script>
+    <script src="//unpkg.com/@@trevoreyre/autocomplete-vue"></script>
+    <script src="~/js/VueInit.js" asp-append-version="true"></script>
+    <script>
+        var app = new Vue({
+            el: '#AppForm',
+            data: {
+                Attached: {
+                    LetterOfProxy: { HasFile: false },
+                    LetterOfAgreement: { HasFile: false },
+                    ApprovalOfInstallations: { HasFile: false }
+                },
+                CaptchaUrl : "@Url.Action("Get", "Captcha", new { width = 160 , height = 48})",
+                Towns: @Html.Raw(Json.Serialize(Model.Towns)) ,
+                AppRoleCode: @Html.Raw(Json.Serialize(Model.AppRoleCode)) ,
+                Rec: { CompanyName: "", CaseName: "", CaseEmail: "" }
+            },
+            components: {
+                'Autocomplete' : Autocomplete
+            },
+            computed: {
+                LabelAddress: function () { /*地址顯示描述*/
+                    if (this.Rec.UserRole === @((byte)AppRoleList.AppCompany) ) return "案場設置場址";
+                    if (this.Rec.UserRole === @((byte)AppRoleList.AppPersonal) ) return "案場設置場址";
+                    if (this.Rec.UserRole === @((byte)AppRoleList.AppStore) ) return "貯存場場址";
+                    if (this.Rec.UserRole === @((byte)AppRoleList.AppTreat)) return "處理廠場址";
+                    return "地址";
+                },
+                IsVendor: function () { /*是否為案場業者*/
+                    return [@((byte)AppRoleList.AppCompany), @((byte)AppRoleList.AppPersonal)].indexOf(this.Rec.UserRole) > -1;
+                },
+                IsShowCompanyName: function () { /*是否公司企業*/
+                    return [@((byte)AppRoleList.AppCompany), @((byte)AppRoleList.AppStore), @((byte)AppRoleList.AppTreat)].indexOf(this.Rec.UserRole) > -1;
+                },
+                IsShowEuicNo: function () { /*是否開放管編填寫*/
+                    return [@((byte)AppRoleList.AppStore), @((byte)AppRoleList.AppTreat)].indexOf(this.Rec.UserRole) > -1;
+                }
+            },
+            methods: {
+                handleInput : function (e, v, f) {
+                    v[f] = e.target.value;
+                    this.$forceUpdate();
+                },
+                search: function (input) {
+                    var me = this;
+                    if (input.length < 1) { return [] }
+                    input = input.replace(/台/, "臺");
+                    return me.Towns.filter(function (Town) {
+                        return Town.indexOf(input) > -1;
+                    });
+                },
+                FileUpLoadChange: function (e, att, describe) {
+                    var me = this;
+                    att.HasFile = false;
+                    delete att.f;
+                    var files = e.target.files || e.dataTransfer.files;
+                    if (!files.length) return;
+                    UiHelper.GetFile(files[0], function (f) {
+                        var _Err = [];
+                        if (!(/\.pdf$/i).test(f.name)) _Err.push(describe + "只能上傳Pdf格式檔案");
+                        if (f.size / (1024 * 1024) > 10) _Err.push(describe + "檔案不能超過10MB");
+                        if (_Err.length > 0) {
+                            UiHelper.alert("<ul><li>" + _Err.join("</li><li>") + "</li>");
+                            return;
+                        }
+                        me.IsShowUpLoadBtn = (_Err.length <= 0);
+                        att.HasFile = true;
+                        att.f = f;
+                    });
+                },
+                ReNewCaptcha: function () {
+                    this.CaptchaUrl = this.CaptchaUrl.split('?')[0] + '?' + Math.random();
+                },
+                VoicePlay: function () {
+                    var audio = new Audio("@Url.Action("GetWave", "Captcha")?" + Math.random());
+                    audio.play();
+                },
+                /**
+                 * 基本表單前端資料檢核
+                 * @@param { any } Rec 主要申請資料表
+                 * @@param { any } Att 相關附件
+                 * @@returns { Array } 錯誤明細清單
+                 */
+                FormCheck: function (Rec, Att) {
+
+                    var me = this;
+
+                    var errors = [];
+
+                    Rec.Attachment = {};
+
+                    if (!Rec.UserName) {
+                        errors.push("『帳號申請者姓名』未填寫");
+                        me.$refs.UserName.focus();
+                        $(window).scrollTop($('#UserName').position().top);
+                        return errors;
+                    }
+                    if (!Rec.Tel) {
+                        errors.push("『帳號申請者聯絡電話』未填寫");
+                        me.$refs.Tel.focus();
+                        $(window).scrollTop($('#Tel').position().top);
+                        return errors;
+                    }
+                    else if (Rec.Tel)
+                    {
+                        var result = /^[0-9]{9,10}#{0,1}[0-9]{0,20}/.test(Rec.Tel);
+                        if (!result) {
+                            errors.push("電話格式不正確(EX:0277548822#124)");
+                            me.$refs.Tel.focus();
+                            $(window).scrollTop($('#Tel').position().top);
+                            return errors;
+                        }
+                        
+                    }
+
+                    if (!Rec.Email) {
+                        errors.push("『帳號申請者E-mail』未填寫");
+                        me.$refs.Email.focus();
+                        $(window).scrollTop($('#Email').position().top);
+                        return errors;
+                    }
+
+                    if (me.IsShowCompanyName && !Rec.CompanyName) {
+                        errors.push("『公司名稱』未填寫");
+                        me.$refs.CompanyName.focus();
+                        $(window).scrollTop($('#CompanyName').position().top);
+                        return errors;
+                    }
+
+                    if (!Rec.Address) {
+                        errors.push("『" + me.LabelAddress + "』未填寫");
+                        $("#Address").focus();
+                        $(window).scrollTop($('#Address').position().top);
+                        return errors;
+                    }
+
+                    if (Rec.IsNotOwner && me.IsVendor && !Att.LetterOfProxy.HasFile) {
+                        $("#FileLetterOfProxy").focus();
+                        $(window).scrollTop($('#FileLetterOfProxy').position().top);
+                        errors.push("『授權委託書』未提供");
+                    } else {
+                        Rec.Attachment["@eItemType.AccountApp_LetterOfProxy.ToString()"] = Att.LetterOfProxy.f;
+                    }
+
+                    if (Rec.IsNotOwner && !Rec.CaseName) {
+                        errors.push("『案場所有人姓名』未填寫");
+                        me.$refs.CaseName.focus();
+                        $(window).scrollTop($('#CaseName').position().top);
+                        return errors;
+                    }
+
+                    if (Rec.IsNotOwner && !Rec.CaseEmail) {
+                        errors.push("『案場所有人E-mail』未填寫");
+                        me.$refs.CaseEmail.focus();
+                        $(window).scrollTop($('#CaseEmail').position().top);
+                        return errors;
+                    }
+
+                    if (me.IsVendor && !Att.LetterOfAgreement.HasFile) {
+                        errors.push("『設備登記同意函』未提供");
+                        $("#FileLetterOfAgreement").focus();
+                        $(window).scrollTop($('#FileLetterOfAgreement').position().top);
+                        return errors;
+                    } else {
+                        Rec.Attachment["@eItemType.AccountApp_LetterOfAgreement.ToString()"] = Att.LetterOfAgreement.f;
+                    }
+
+                    if (Rec.UserRole === @((byte)AppRoleList.AppTreat) && !Rec.EuicNo) {
+                        errors.push("『事業廢棄物管制編號』未填寫");
+                        me.$refs.EuicNo.focus();
+                        $(window).scrollTop($('#EuicNo').position().top);
+                        return errors;
+                    }
+
+                    if (Rec.UserRole === @((byte)AppRoleList.AppStore) && !Att.ApprovalOfInstallations.HasFile) {
+                        errors.push("『貯存場設置核准函』未提供");
+                        $("#FileApprovalOfInstallations").focus();
+                        $(window).scrollTop($('#FileApprovalOfInstallations').position().top);
+                        return errors;
+                    } else {
+                        Rec.Attachment["@eItemType.AccountApp_ApprovalOfInstallations.ToString()"] = Att.ApprovalOfInstallations.f;
+                    }
+
+                    if (!Rec.CaptchaCode) {
+                        errors.push("『圖形驗證碼』未填寫");
+                        me.$refs.CaptchaCode.focus();
+                        $(window).scrollTop($('#CaptchaCode').position().top);
+                        return errors;
+                    }
+                    return errors;
+
+                } ,
+                /**
+                 * 案件送出
+                 * @@param { any } Rec 主要申請資料表
+                 * @@param { any } Att 相關附件
+                 */
+                SendApply: function ( Rec , Att ) {
+                    var me = this;
+                    var errors = me.FormCheck(Rec,Att);
+
+                    if (errors.length) {
+                        UiHelper.ClearMsg().ShowErr(errors, 6000);
+                        return;
+                    }
+
+                    me.$http.post({
+                        ApiDesc: "送出申請資料",
+                        url: "@Url.Action("Apply", "AccountApp")" ,
+                        data: Rec,
+                        success: function (_Result) {
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.alert("申請資料已收到", function () {
+                                location.href = _Result.url;
+                            });
+                        },
+                        fail: function (e) {
+                            var data = e.response.data.errors;
+                            me.ReNewCaptcha();
+                            me.Rec.CaptchaCode = "";
+                            if (!me.Rec.Captcha || data[0] == "驗證碼輸入錯誤") {
+                                me.$refs.CaptchaCode.focus();
+                                return;
+                            }
+                        }
+                    });
+                } ,
+                //同上
+                handleClick: function () {
+                    this.Rec.CaseName = this.Rec.UserName;
+                    this.Rec.CaseEmail = this.Rec.Email;
+                }
+            }
+        });
+    </script>
+}
+

@@ -1,0 +1,380 @@
+﻿@page
+@using Pvis.Biz.Extension;
+@{
+    ViewData["Title"] = "稽核表單";
+}
+<style>
+    iframe {
+        width: 100%;
+        height: 600px;
+        background: #f8f9fc;
+        color: #f8f9fc;
+    }
+
+    fieldset, legend {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+<div id="app" v-cloak>
+    @*<environment include="Development">
+            <pre>{{Rec|json}}</pre>
+            <pre>{{Qry|json}}</pre>
+        </environment>*@
+
+    <div id="MainPage" v-if="Action == 'Main'">
+        <div class="form-inline inline-box">
+            <label for="Dt" class="control-label ml-4">預定清理日期:</label>
+            <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+            ～<flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+            <label class="control-label ml-4">使用狀態:</label>
+            <label><input type="radio" v-model.number="Qry.Aud_State" value="0" />尚未填寫</label>
+            <label><input type="radio" v-model.number="Qry.Aud_State" value="1" />填寫中</label>
+            <label><input type="radio" v-model.number="Qry.Aud_State" value="M" />補正</label>
+            <label><input type="radio" v-model.number="Qry.Aud_State" value="S" />送出申請</label>
+            <label><input type="radio" v-model.number="Qry.Aud_State" value="Y1" />審查通過</label>
+            <div class="m-auto"></div>
+            <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        </div>
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>稽核行程編號</th>
+                        <th>允收稽核日期</th>
+                        <th>處理稽核日期</th>
+                        <th>狀態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td>{{item.Aud_Sch_No}}</td>
+                        <td>{{item.Pre_Date | formatDate}}</td>
+                        <td>{{item.Tre_Pre_Date | formatDate}}</td>
+                        <td>{{GetStatus(item.Check_State)}}</td>
+                        <td>
+                            <input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item);" />
+                            <input v-if="!(item.Check_State == 'Y1' || item.Check_State == 'S')" type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index+pageStart);" />
+                            @*<input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(index+pageStart);" tabindex="-1" v-if="item.Aud_State == '1'" />*@
+                            <input v-if="item.Check_State == '1'" type="button" class="btn btn-outline-primary" value="送出審查" @@click="SendCheck(item)" />
+                            <input v-if="item.Check_State == 'M'" type="button" class="btn btn-outline-primary" value="送出補正" @@click="SendCheck(item)" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <partial name="_PagerRecListPartial" />
+        </div><!-- 分頁控制 -->
+    </div>
+
+    <div id="TabPage" v-if="Action == 'View' || Action == 'Edit'">
+        <div class="container">
+            <div class="row">
+                <div class="col-10">
+
+                </div>
+                <div class="col-2">
+                    <button class="btn-outline-primary" @@click="Back()">回上一頁</button>
+                </div>
+
+            </div>
+        </div>
+
+        <nav>
+            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                <a v-if="Action == 'Edit'" class="nav-item nav-link" @@click="Refresh(4)" v-bind:class="{active:IfEdit}" id="nav-pv1-tab" data-toggle="tab" href="#nav-pv1" role="tab" aria-controls="nav-pv1" aria-selected="{{IfEdit}}">廢PV(進廠)</a>
+                <a v-if="Action == 'Edit'" class="nav-item nav-link" @@click="Refresh(5)" id="nav-pv2-tab" data-toggle="tab" href="#nav-pv2" role="tab" aria-controls="nav-pv2" aria-selected="false">廢PV(處理)</a>
+                <a v-if="Action == 'Edit'" class="nav-item nav-link" @@click="Refresh(1)" id="nav-record1-tab" data-toggle="tab" href="#nav-record1" role="tab" aria-controls="nav-record1" aria-selected="false">產出物(產出)</a>
+                <a v-if="Action == 'Edit'" class="nav-item nav-link" @@click="Refresh(2)" id="nav-record2-tab" data-toggle="tab" href="#nav-record2" role="tab" aria-controls="nav-record2" aria-selected="false">產出物(出廠)</a>
+                <a class="nav-item nav-link" id="nav-inventory-tab" @@click="Refresh(6)" v-bind:class="{active:IfView}" data-toggle="tab" href="#nav-inventory" role="tab" aria-controls="nav-inventory" aria-selected="{{IfView}}">批次盤點記錄表</a>
+                <a class="nav-item nav-link" id="nav-Factory-tab" @@click="Refresh(3)" data-toggle="tab" href="#nav-Factory" role="tab" aria-controls="nav-Factory" aria-selected="false">出廠記錄表</a>
+                <a class="nav-item nav-link" id="nav-Invest-tab" @@click="Refresh(7)" data-toggle="tab" href="#nav-Invest" role="tab" aria-controls="nav-Invest" aria-selected="false">投入產出表</a>
+                <a class="nav-item nav-link" v-if="ScheduleAudit.Check_State == 'Y1' || ScheduleAudit.Check_State == 'M'" id="nav-confirm-tab" data-toggle="tab" href="#nav-confirm" role="tab" aria-controls="nav-confirm" aria-selected="false">確認資料</a>
+
+            </div>
+        </nav>
+        <div class="tab-content" id="nav-tabContent">
+            <div class="tab-pane fade" style="margin:0px;padding:0px;overflow:hidden" v-bind:class="{show:IfEdit, active:IfEdit}" id="nav-pv1" role="tabpanel" aria-labelledby="nav-pv1-tab">
+                    <iframe id="Pv1" title="廢PV(進廠)" v-bind:src="Pv1Url" scrolling="auto" frameborder="0"></iframe>
+
+            </div>
+            <div class="tab-pane fade" id="nav-pv2" role="tabpanel" aria-labelledby="nav-pv2-tab">
+                    <iframe id="Pv2" title="廢PV(處理)" v-bind:src="Pv2Url" scrolling="auto" frameborder="0"></iframe>
+
+            </div>
+            <div class="tab-pane fade" id="nav-record1" role="tabpanel" aria-labelledby="nav-record1-tab">
+          
+                    <iframe id="record1" title="產出物(產出)" v-bind:src="record1Url" scrolling="auto" frameborder="0"></iframe>
+       
+
+            </div>
+            <div class="tab-pane fade" id="nav-record2" role="tabpanel" aria-labelledby="nav-record2-tab">
+               
+                    <iframe id="record2" title="產出物(出廠)" v-bind:src="record2Url" scrolling="auto" frameborder="0"></iframe>
+                
+
+            </div>
+            <!--檢視-->
+            <div class="tab-pane fade" v-bind:class="{show:IfView, active:IfView}" id="nav-inventory" role="tabpanel" aria-labelledby="nav-inventory-tab">
+                
+                    <iframe id="Inventory" title="批次盤點記錄表" v-bind:src="InventoryUrl" scrolling="auto" frameborder="0"></iframe>
+                
+
+            </div>
+            <div class="tab-pane fade" id="nav-Factory" role="tabpanel" aria-labelledby="nav-Factory-tab">
+                
+                    <iframe id="Fr" title="出廠記錄表" v-bind:src="FrUrl" scrolling="auto" frameborder="0"></iframe>
+                
+
+            </div>
+            <div class="tab-pane fade" id="nav-Invest" role="tabpanel" aria-labelledby="nav-Invest-tab">
+                
+                    <iframe id="Cr" title="投入產出表" v-bind:src="CrUrl" scrolling="auto" frameborder="0"></iframe>
+                
+
+            </div>
+            <!--檢視-->
+            <!--審核-->
+            <div class="tab-pane fade" id="nav-confirm" role="tabpanel" aria-labelledby="nav-confirm-tab">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" disabled="disabled" type="radio" name="Aud_State" id="Aud_State1" v-model="ScheduleAudit.Check_State" value="Y1" />
+                    <label class="form-check-label" for="Aud_State1">通過</label>
+                    <input class="form-check-input" disabled="disabled" type="radio" name="Aud_State" id="Aud_State2" v-model="ScheduleAudit.Check_State" value="M" />
+                    <label class="form-check-label" for="Aud_State2">補正</label>
+                </div>
+                <div class="form-group">
+                    <label for="Aud_Su_opinion">投入產出表說明</label>
+                    <textarea disabled="disabled" style="width:100%" id="Aud_Su_opinion" class="form-control" v-model="ScheduleAudit.Aud_Su_opinion">
+
+                        </textarea>
+                </div>
+                <div class="form-group">
+                    <label for="Aud_Desc">審查意見</label>
+                    <textarea disabled="disabled" style="width:100%" id="Aud_Desc" class="form-control" v-model="ScheduleAudit.Aud_Desc">
+
+                        </textarea>
+                </div>
+            </div>
+            <!--審核-->
+        </div>
+
+    </div>
+
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]<span v-if="Rec.Pid > 0"> {{Rec.Aud_Sch_No}}</span></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="form-inline inline-box">
+
+                </div>
+
+                <div class="modal-body">
+
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @@click="Save(Rec,Bno);">存檔</button>
+                        <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- 編輯框 -->
+</div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>
+    </environment>
+    <script>
+
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],
+                Rec: {},
+                RecV: {},
+                Qry: {},
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+                Action: "Main",
+                Aud_Sch_No: "",
+                ScheduleAudit: {},
+                record1Url: "",// "@Url.Content("~/BackEnd/Apply/RecordItemVue")",//產出物(產出)
+                record2Url: "",// "@Url.Content("~/BackEnd/Apply/RecordVue")",//產出物(出廠)
+                FrUrl: "",// "@Url.Content("~/BackEnd/Apply/RecordReportVue")",//出廠記錄表
+                Pv1Url: "@Url.Content("~/BackEnd/Apply/PvImportVue")",//廢PV(進場)
+                Pv2Url: "",// "@Url.Content("~/BackEnd/Apply/PvTreatmentVue")",//廢PV(處理)
+                InventoryUrl: "@Url.Content("~/BackEnd/Apply/BatchInventoryRecordVue")",//批次盤點記錄表
+                CrUrl: "" ,// "@Url.Content("~/BackEnd/Apply/CheckReportVue")",//投入產出表
+                IfView: false,
+                IfEdit: true
+
+            },
+            methods: {
+                Refresh: function (kind) {
+                    var self = this;
+                    switch (kind) {
+                        case 1:
+                            self.record1Url = "@Url.Content("~/BackEnd/Apply/RecordItemVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('record1').contentWindow.location.reload()
+                            break;
+                        case 2:
+                            self.record2Url = "@Url.Content("~/BackEnd/Apply/RecordVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('record2').contentWindow.location.reload()
+                            break;
+                        case 3:
+                            self.FrUrl = "@Url.Content("~/BackEnd/Apply/RecordReportVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('Fr').contentWindow.location.reload()
+                            break;
+                        case 4:
+                            self.Pv1Url = "@Url.Content("~/BackEnd/Apply/PvImportVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('Pv1').contentWindow.location.reload()
+                            break;
+                        case 5:
+                            self.Pv2Url = "@Url.Content("~/BackEnd/Apply/PvTreatmentVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('Pv2').contentWindow.location.reload()
+                            break;
+                        case 6:
+                            self.InventoryUrl = "@Url.Content("~/BackEnd/Apply/BatchInventoryRecordVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('Inventory').contentWindow.location.reload()
+                            break;
+                        case 7:
+                            self.CrUrl = "@Url.Content("~/BackEnd/Apply/CheckReportVue")" + "?No=" + self.Aud_Sch_No;
+                            document.getElementById('Cr').contentWindow.location.reload()
+                            break;
+                    }
+                },
+                GetStatus: function (Dat) {
+                    if (!Dat) return;
+                    var _Status = '';
+                    if (Dat == "1") _Status = '填寫中';
+                    if (Dat == "S") _Status = '送出申請';
+                    if (Dat == "M") _Status = '補正';
+                    if (Dat == "Y1") _Status = '審查通過';
+                    if (Dat == "0") _Status = "尚未填寫"
+                    return _Status;
+                },
+
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/AuditOperation/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/AuditOperation/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+
+
+                Edit: function (item) {
+                    var self = this;
+                    self.Action = "Edit";
+                   // self.record1Url = "@Url.Content("~/BackEnd/Apply/RecordItemVue")?No=" + item.Aud_Sch_No;
+                   // self.record2Url = "@Url.Content("~/BackEnd/Apply/RecordVue")?No=" + item.Aud_Sch_No;
+                   // self.FrUrl = "@Url.Content("~/BackEnd/Apply/RecordReportVue")?No=" + item.Aud_Sch_No;
+                    self.Pv1Url = "@Url.Content("~/BackEnd/Apply/PvImportVue")?No=" + item.Aud_Sch_No;
+                   // self.Pv2Url = "@Url.Content("~/BackEnd/Apply/PvTreatmentVue")?No=" + item.Aud_Sch_No;
+                    self.InventoryUrl = "@Url.Content("~/BackEnd/Apply/BatchInventoryRecordVue")?No=" + item.Aud_Sch_No;
+                   // self.CrUrl = "@Url.Content("~/BackEnd/Apply/CheckReportVue")?No=" + item.Aud_Sch_No;
+                    self.Aud_Sch_No = item.Aud_Sch_No;
+                    self.ScheduleAudit = item;
+                    self.IfEdit = true;
+                    self.IfView = false;
+                },
+
+                /**
+                 * 基本表單前端資料檢核
+                 * @@param { any } Rec 主要申請資料表
+                 * @@returns { Array } 錯誤明細清單
+                 */
+                FormCheck: function (Rec) {
+                    var errors = [];
+
+
+                    return errors;
+                },
+                /**
+                 * 案件送出
+                 * @@param { any } Rec 主要申請資料表
+                 */
+                Save: function (Rec) {
+
+                },
+                Back: function () {
+                    var self = this;
+                    self.Action = "Main";
+                },
+                View: function (item) {
+                    var self = this;
+                    // self.FrUrl = "@Url.Content("~/BackEnd/Apply/RecordReportVue")?No=" + item.Aud_Sch_No;
+                    self.InventoryUrl = "@Url.Content("~/BackEnd/Apply/BatchInventoryRecordVue")" + "?No=" + item.Aud_Sch_No;
+                    self.Aud_Sch_No = item.Aud_Sch_No;
+                    self.ScheduleAudit = item;
+                    self.Action = "View";
+                    self.IfEdit = false;
+                    self.IfView = true;
+                    @*var self = this;
+                    self.Action = "View";
+                    self.record1Url = "@Url.Content("~/BackEnd/Apply/RecordItemVue")?No=" + item.Bookingno;
+                    self.record2Url = "@Url.Content("~/BackEnd/Apply/RecordVue")?No=" + item.Bookingno;*@
+                },
+                SendCheck: function (item) {
+                  var self = this;
+                    self.$http.post({
+                        ApiDesc: "送出審核",
+                        url: "@Url.Content("~/api/AuditOperation/CheckChange")",
+                        data: { pid: item.Pid },
+                        success: function (result) {
+                            self.Load();
+                        }
+                    })
+                }
+            },
+            mounted(){
+                @*this.record1Url = "@Url.Content("~/BackEnd/Apply/RecordItemVue")";
+                this.record2Url = "@Url.Content("~/BackEnd/Apply/RecordVue")";*@
+            },
+            created: function () {
+
+                this.Load();
+            }
+        });
+
+    </script>
+}

@@ -1,0 +1,12 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.CheckFormModel
+<component type="typeof(ScanBarCode)" render-mode="ServerPrerendered" />
+
+@section Scripts{
+    <script src="_framework/blazor.server.js"></script>
+    <script src="~/lib/barcodereader/zxing.js"></script>
+    <script src="~/lib/barcodereader/barcode.js"></script>
+    @*<script src="_content/ZXingBlazor/lib/barcodereader/zxing.js"></script>
+        <script src="_content/ZXingBlazor/lib/barcodereader/barcode.js"></script>*@
+
+}

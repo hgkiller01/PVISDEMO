@@ -1,0 +1,52 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Account.ProfileModel
+@{
+    ViewData["Title"] = "個人資料維護";
+}
+
+<div class="row" id="app">
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="DisplayName">姓名</label>
+            <input class="form-control" type="text" v-model="Rec.DisplayName" maxlength="250" id="DisplayName" />
+        </div>
+        <div class="form-group">
+            <label for="CompanyName">機構名稱</label>
+            <input class="form-control" disabled="disabled" type="text" v-model="Rec.CompanyName" maxlength="250" id="CompanyName" />
+        </div>
+        <div class="form-group">
+            <label for="Email">E-mail</label>
+            <input class="form-control" type="email" v-model="Rec.Email" maxlength="120" id="Email" />
+        </div>
+        <div class="form-group">
+            <label for="PhoneNumber">聯絡電話</label>
+            <input class="form-control" type="tel" v-model="Rec.PhoneNumber" maxlength="60" id="PhoneNumber" />
+        </div>
+        <div class="text-right">
+            <button type="button" class="btn btn-outline-primary" @@click="ChangeProfile(Rec)">更新個人資料</button>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                Rec: @Html.Raw(Json.Serialize(Model.Rec))
+            },
+            methods: {
+                ChangeProfile: function (Rec) {
+                    var me = this;
+                    me.$http.post({
+                        ApiDesc: "個人資料維護",
+                        url: "@Url.Content("~/api/UserAuth/ChangeProfile")",
+                        data: Rec,
+                        success: function (_Result) {
+                            UiHelper.ShowMsg("資料更新已完成");
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+}

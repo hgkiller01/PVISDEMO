@@ -1,0 +1,628 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.ScheduleVue
+
+@{
+    ViewData["Title"] = "清理行程管理";
+}
+@section heads{
+    <link rel="stylesheet" href="//unpkg.com/@@trevoreyre/autocomplete-vue/dist/style.css" />
+}
+<div id="app" v-cloak>
+    <environment include="Development">
+        <pre>{{Rec|json}}</pre>
+        <pre>{{Qry|json}}</pre>
+    </environment>
+    <div class="form-inline inline-box">
+        <label for="Dt" class="control-label ml-4">預定清理日期:</label>
+        <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+        ～<flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+        <label class="control-label ml-4">使用狀態:</label>
+        <label><input type="radio" v-model.number="Qry.Cle_State" value="1" />已安排日期</label>
+        <label><input type="radio" v-model.number="Qry.Cle_State" value="D" />待確認合約</label>
+        <label><input type="radio" v-model.number="Qry.Cle_State" value="D1" />已確認合約</label>
+        <label><input type="radio" v-model.number="Qry.Cle_State" value="DM" />合約須補正</label>
+        <label><input type="radio" v-model.number="Qry.Cle_State" value="C1" />已完成清理</label>
+        <div class="m-auto"></div>
+        <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        <input type="button" value="新增資料" @@click="Edit()" class="btn btn-outline-primary" />
+    </div>
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center">
+            <thead>
+                <tr>
+                    <th>清理編號</th>
+                    <th>預定清理日期</th>
+                    <th>清理數量</th>
+                    <th>清除機構</th>
+                    <th>處理機構</th>
+                    <th>清理進度</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{item.Cle_Sch_No}}</td>
+                    <td>{{item.Cle_Date | formatDate}}</td>
+                    <td>{{item.Cle_Qty}}</td>
+                    <td>{{item.Cle_Name}}</td>
+                    <td>{{item.Tre_Name}}</td>
+                    <td>{{GetStatus(item.Cle_State)}}</td>
+                    <td>
+                        <input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item);" v-if="item.Cle_State == 'D1' || item.Cle_State ==  'DM' || item.Cle_State ==  'C1' " />
+                        <input type="button" class="btn btn-outline-primary" value="確認" @@click="View(item);" v-if="item.Cle_State == 'D'" />
+                        <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index+pageStart);" v-if="item.Cle_State == '1' || item.Cle_State ==  'M'" />
+                        <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(index+pageStart);" tabindex="-1" v-if="item.Cle_State == '1'" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div><!-- 查詢結果 -->
+    <div class="text-right">
+        <partial name="_PagerRecListPartial" />
+    </div><!-- 分頁控制 -->
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]<span v-if="Rec.Pid > 0"> {{Rec.Cle_Sch_No}}</span></h4><br />
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <template v-if="!Rec.Pid">
+                    <div class="form-inline inline-box">
+                        <label for="City" class="control-label">縣市:</label>
+                        <div class="col-md-9">
+                            <select class="form-control" v-model="Qry.City" id="City">
+                                <option value="">不限</option>
+                                <option v-for="option in CityOptions" :value="option.CountyName">{{option.CountyName}}</option>
+                            </select>
+                        </div>
+                        <label for="City" class="control-label">案場排出登記表申請日期區間:</label>
+                        <div class="col-md-9">
+                            <label for="StartDt"></label>
+                            <label for="EndDt"></label>
+                            <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control w-8" id="StartDt" readonly></flat-pickr>~
+                            <flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control w-8" id="EndDt" readonly></flat-pickr>
+                        </div>
+                        <div class="m-auto"></div>
+                        <input type="button" value="搜尋" @@click="GetSBList(Qry)" class="btn btn-outline-success" />
+                    </div>
+                </template>
+                <div class="modal-body" v-if="Rec.Pid > 0">
+                    <div class="form-group row">
+                        <label for="Cle_Sch_No" class="col-md-3 col-form-label">清理編號</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="Rec.Cle_Sch_No" id="Cle_Sch_No" readonly />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="RecV.Sum_Qty" class="col-md-3 col-form-label">清理數量(片)</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" id="RecV.Sum_Qty" v-model="RecV.Sum_Qty" readonly />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="RecV.Sum_Weight" class="col-md-3 col-form-label">預估重量(公斤)</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" id="RecV.Sum_Weight" v-model="RecV.Sum_Weight" readonly />
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive-md">
+                    <table class="table table-hover text-center">
+                        <thead>
+                            <tr>
+                                <th>案場排出登記表申請編號</th>
+                                <th>聯絡人</th>
+                                <th>存放地點</th>
+                                <th>排出數量</th>
+                                <th>預估重量(公斤)</th>
+                                <th v-if="!Rec.Pid">勾選安排清運</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(Sitem,index) in RecSchSBList.slice(pageViewStart, pageViewStart + countViewOfPage)">
+                                <td>{{Sitem.Bookingno}}</td>
+                                <td>{{Sitem.Contact}}</td>
+                                <td>{{Sitem.USAddr1}}</td>
+                                <td>{{Sitem.Qty}}</td>
+                                <td>{{Sitem.SPWeight1}}</td>
+                                <td v-if="!Rec.Pid"><input type="checkbox" class="form-check-input" :value="Sitem.Bookingno" v-model="Bno" id="Bno" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <environment include="Development">
+                        <pre>{{Bno|json}}</pre>
+                    </environment>
+                </div><!-- 查詢結果 -->
+                <div class="text-right">
+                    <partial name="_PagerRecViewListPartial" />
+                </div>
+                <!-- 分頁控制 -->
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label for="Cle_Date" class="col-md-3 col-form-label">預定清除日期</label>
+                        <div class="col-md-9">
+                            <flat-pickr v-model="Rec.Cle_Date" :config="FlatPickrCfg" placeholder="預定清除日期" name="FlatPickrCfg" class="form-control w-8" id="Cle_Date" readonly></flat-pickr>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="Cle_Name" class="col-md-3 col-form-label">清除機構</label>
+                        <div class="col-md-9">
+                            <input v-if="Rec.Cle_Name" disabled="disabled" type="text" class="form-control" id="Cle_Name" v-model="Rec.Cle_Name" />
+                            <label for="searchCle"></label>
+                            <autocomplete :default-value="Rec.Cle_Name" id="searchCle" :search="searchCle" placeholder="請輸入" @@change="handleInput($event,Rec,'Cle_Name')"></autocomplete>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="Tre_Name" class="col-md-3 col-form-label">處理機構</label>
+                        <div class="col-md-9">
+                            <input v-if="Rec.Tre_Name" disabled="disabled" type="text" class="form-control" v-model="Rec.Tre_Name" />
+                            <label for="searchTre"></label>
+                            <autocomplete :default-value="Rec.Tre_Name" id="searchTre" :search="searchTre" placeholder="請輸入" @@change="handleInput($event,Rec,'Tre_Name')"></autocomplete>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @@click="Save(Rec,Bno);">存檔</button>
+                        <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- 編輯框 -->
+    <div id="ViewDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[檢視]<span v-if="Rec.Pid > 0"> {{Rec.Cle_Sch_No}}</span></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a data-toggle="tab" href="#sb1" role="tab" class="nav-item nav-link active">清理資訊</a>
+                        <a data-toggle="tab" href="#sb2" role="tab" class="nav-item nav-link">確認資料</a>
+                    </div>
+                    <div class="tab-content tab-content-border" style="height: 640px; overflow-y: auto">
+                        <div id="sb1" role="tabpanel" class="tab-pane active">
+                            <div class="modal-body">
+                                <div class="form-group row">
+                                    <label for="Cle_Sch_No" class="col-md-3 col-form-label">清理編號</label>
+                                    <div class="col-md-9">
+                                        <input type="text" class="form-control" v-model="Rec.Cle_Sch_No" id="Cle_Sch_No" readonly />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="Sum_Qty" class="col-md-3 col-form-label">清理數量(片)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" class="form-control" v-model="RecV.Sum_Qty" id="Sum_Qty" readonly />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="Sum_Weight" class="col-md-3 col-form-label">預估重量(公斤)</label>
+                                    <div class="col-md-9">
+                                        <input type="text" class="form-control" v-model="RecV.Sum_Weight" id="Sum_Weight" readonly />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive-md">
+                                <table class="table table-hover text-center">
+                                    <thead>
+                                        <tr>
+                                            <th>案場排出登記表申請編號</th>
+                                            <th>聯絡人</th>
+                                            <th>存放地點</th>
+                                            <th>排出數量</th>
+                                            <th>預估重量(公斤)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(Sitem,index) in RecSchSBList.slice(pageViewStart, pageViewStart + countViewOfPage)">
+                                            <td>{{Sitem.Bookingno}}</td>
+                                            <td>{{Sitem.Contact}}</td>
+                                            <td>{{Sitem.USAddr1}}</td>
+                                            <td>{{Sitem.Qty}}</td>
+                                            <td>{{Sitem.SPWeight1}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div><!-- 查詢結果 -->
+                            <div class="text-right">
+                                <partial name="_PagerRecViewListPartial" />
+                            </div>
+                            <br /><br />
+                            <!-- 分頁控制 -->
+                            <div class="modal-body">
+                                <div class="form-group row">
+                                    <label for="Cle_Date_r" class="col-md-3 col-form-label">預定清除日期</label>
+                                    <div class="col-md-9">
+                                        <flat-pickr v-model="Rec.Cle_Date" :config="FlatPickrCfg" placeholder="預定清除日期" name="FlatPickrCfg" class="form-control w-8" id="Cle_Date_r" readonly disabled></flat-pickr>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="Cle_Name_r" class="col-md-3 col-form-label">清除機構</label>
+                                    <div class="col-md-9">
+                                        <input type="text" class="form-control" v-model="Rec.Cle_Name" maxlength="50" id="Cle_Name_r" readonly />
+                                    </div>
+
+                                    <dt class="col-sm-4">清除機構合約文件</dt>
+                                    <dd class="col-sm-8">
+                                        <ul class="m-0 p-0">
+                                            <li v-for="f in RecV.FileCleDoc">
+                                                <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                            </li>
+                                        </ul>
+                                    </dd>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="Tre_Name_r" class="col-md-3 col-form-label">處理機構</label>
+                                    <div class="col-md-9">
+                                        <input type="text" class="form-control" v-model="Rec.Tre_Name" maxlength="50" id="Tre_Name_r" readonly />
+                                    </div>
+
+                                    <dt class="col-sm-4">處理機構合約文件</dt>
+                                    <dd class="col-sm-8">
+                                        <ul class="m-0 p-0">
+                                            <li v-for="f in RecV.FileTreDoc">
+                                                <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                            </li>
+                                        </ul>
+                                    </dd>
+                                </div>
+                                <div class="modal-footer">
+
+                                </div>
+                            </div>
+                        </div>
+                        <div id="sb2" role="tabpanel" class="tab-pane">
+                            <template v-if="RecV.Cle_State == 'D'">
+                                <div class="form-inline inline-box">
+                                    <label><input type="radio" v-model="Review.Status" value="D1" />通過</label>
+                                    <label><input type="radio" v-model="Review.Status" value="DM" />補正</label>
+                                </div>
+                                <div class="form-inline pl-2" v-if="Review.Status == 'DM' || Review.Status == 'DN'">
+                                    <label for="Check_opinion">意見：</label> <input class="form-control" type="text" v-model="Review.Check_opinion" id="Check_opinion" maxlength="50" style="width: 600px" />
+                                </div>
+                                <div class="modal-footer mt-4">
+                                    <button type="button" class="btn btn-primary" @@click="SaveReview(RecV, Review)">確認</button>
+                                    <button type="button" data-dismiss="modal" class="btn btn-warning">取消</button>
+                                </div>
+                            </template>
+                            <table class="table table-sm table-bordered" v-if="ReviewList.length > 0">
+                                <tr class="text-center bg-gray-200">
+                                    <th class="w-7">確認者</th>
+                                    <th class="w-7">確認日期</th>
+                                    <th>確認意見</th>
+                                </tr>
+                                <tr v-for="r in ReviewList">
+                                    <td>{{r.Check_Name}}</td>
+                                    <td>{{r.Check_Date | formatDate}}</td>
+                                    <td>
+
+                                        <div v-if="r.Status == 'D1'">
+                                            已確認合約
+                                        </div>
+                                        <div v-if="r.Status == 'DM' || r.Status == 'DN'">
+                                            {{r.Status == 'DM' ? '合約須補正' : '合約不通過'}}，
+                                            {{r.Check_opinion}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- 檢視框 -->
+</div>
+
+@section Scripts{
+    <script src="//unpkg.com/@@trevoreyre/autocomplete-vue"></script>
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/MixinPagerRecViewList.js"></script>
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>
+    </environment>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList, MixinPagerRecViewList],
+            data: {
+                RecList: [],
+                RecSchSBList: [],
+                AttList: [],
+                Rec: {},
+                RecV: {},
+                Qry: {},
+                Bno: [],
+                Review: {},
+                ReviewList: [],
+                CityOptions: [],
+                Cles: @Html.Raw(Json.Serialize(Model.Cles)),
+                Tres: @Html.Raw(Json.Serialize(Model.Tres)),
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+            },
+
+            components: {
+                'Autocomplete': Autocomplete
+            },
+
+            methods: {
+
+                handleInput: function (e, v, f) {
+                    var self = this;
+                    var haveValue = [];
+                    if (f == "Cle_Name") {
+                        haveValue = self.Cles.filter(function (item) {
+                            return item == e.target.value;
+                        })
+                    }
+                    if (f == "Tre_Name") {
+                        haveValue = self.Tres.filter(function (item) {
+                            return item == e.target.value;
+                        })
+                    }
+
+                    if (haveValue.length > 0) {
+                        v[f] = e.target.value;
+                    } else {
+                        v[f] = "";
+                    }
+
+                    this.$forceUpdate();
+                },
+                searchCle: function (input) {
+                    var me = this;
+                    if (input.length < 1) { return [] }
+                    input = input.replace(/台/, "臺");
+                    return me.Cles.filter(function (Cle) {
+                        return Cle.indexOf(input) > -1;
+                    });
+                },
+                searchTre: function (input) {
+                    var me = this;
+                    if (input.length < 1) { return [] }
+                    input = input.replace(/台/, "臺");
+                    return me.Tres.filter(function (Tre) {
+                        return Tre.indexOf(input) > -1;
+                    });
+                },
+
+                urlContent: function (path) {
+                var root = '@Url.Content("~/")';
+                return path.replace('~/', root);
+                },
+
+                GetStatus: function (Dat) {
+                    if (!Dat) return;
+                    var _Status = '';
+                    if (Dat == "1")  _Status = '已安排日期';
+                    if (Dat == "D")  _Status = '待確認合約';
+                    if (Dat == "D1") _Status = '已確認合約';
+                    if (Dat == "DM") _Status = '合約須補正';
+                    if (Dat == "C1") _Status = '已完成清理';
+                    return _Status;
+                },
+
+                GetCityOptions: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "取得縣市",
+                        url: "@Url.Action("GetCityOptions", "Schedule")",
+                        data: {},
+                        success: function (_Result) {
+                            me.CityOptions = _Result;
+                            return;
+                        }
+                    });
+                },
+
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/Schedule/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/Schedule/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            me.currPage = 1;
+                            me.currViewPage = 1;
+                        }
+                    });
+                },
+
+                GetSBList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/Schedule/GetSBList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecSchSBList = _Result;
+                        }
+                    });
+                },
+
+                Edit: function (item, index) {
+                    var me = this;
+                    me.RecSchSBList = [];
+                    me.Bno = [];
+                    me.Rec = item || {
+                        Uid: "0"
+                    };
+
+                    $('#ModifyDialog').modal("show");
+                    if (!this.Rec.Pid) return;
+                    this.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Content("~/api/Schedule/GetItem")",
+                        data: {
+                            Pid: this.Rec.Pid
+                        },
+                        success: function (_Result) {
+                            me.Rec = _Result.Rec;
+                            me.RecV = _Result.Rec;
+                            me.RecSchSBList = _Result.RecSchSBList;
+                            me.Rec.EditIndex = index;
+                            me.Rec.CompanyName = item.CompanyName
+                        }
+                    });
+                },
+
+                Delete: function (index) {
+                    var me = this;
+                    UiHelper.confirm("確定要刪除這筆資料!?", function () {
+                        me.$http.post({
+                            ApiDesc: "資料刪除",
+                            url: "@Url.Content("~/api/Schedule/Delete")",
+                            data: me.RecList[index],
+                            success: function (_Result) {
+                                UiHelper.ShowMsg("資料已刪除。");
+                                me.RecList.splice(index, 1);
+                            }
+                        });
+                    });
+                },
+
+                /**
+                 * 基本表單前端資料檢核
+                 * @@param { any } Rec 主要申請資料表
+                 * @@returns { Array } 錯誤明細清單
+                 */
+                FormCheck: function (Rec) {
+                    var errors = [];
+
+                    if (!Rec.Cle_Date) errors.push("『預定清除日期』未填寫");
+                    if (!Rec.Cle_Name) errors.push("『清除機構』未填寫");
+                    if (!Rec.Tre_Name) errors.push("『處理機構』未填寫");
+
+                    return errors;
+                },
+                /**
+                 * 案件送出
+                 * @@param { any } Rec 主要申請資料表
+                 */
+                Save: function (Rec, Bno) {
+                    var me = this;
+                    var errors = me.FormCheck(Rec);
+                    if (errors.length) {
+                        UiHelper.ClearMsg().ShowErr(errors, 6000);
+                        return;
+                    }
+                    RecAll = { 'Rec': Rec, 'Bno': Bno }
+                    this.$http.post({
+                        ApiDesc: "資料存檔",
+                        url: "@Url.Content("~/api/Schedule/Save")",
+                        data: RecAll,
+                        success: function (_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+
+                                me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                            } else {
+                                me.RecList.unshift(_Result.Rec);
+                            }
+                            me.$forceUpdate();
+                            me.GetList(me.Qry);
+                            $('#ModifyDialog').modal("hide");
+                        }
+                    });
+                },
+
+                SaveReview: function (Rec, Review) {
+                    var me = this;
+                    var errors = me.Valid(Review);
+                    if (errors.length) {
+                        UiHelper.ClearMsg().ShowErr(errors, 6000);
+                        return;
+                    }
+                    Review.Cle_Sch_No = Rec.Cle_Sch_No;
+
+                    me.$http.post({
+                        ApiDesc: "審查資料存檔",
+                        url: '@Url.Action("SaveReview", "Schedule")',
+                        data: Review,
+                        success: function (result) {
+                            me.RecList[me.Rec.CKIndex] = result.Rec;
+                            me.$forceUpdate();
+                            $('#ViewDialog').modal('hide');
+                            me.GetList(me.Qry);
+                        }
+                    });
+                },
+
+                /**
+                 * 表單驗證
+                 * @@param { any } Review 清理行程表-審查確認
+                 * @@returns { Array } 錯誤明細清單
+                 */
+                Valid: function (Review) {
+                    var errors = [];
+
+                    if (!Review.Status) {
+                        errors.push('『確認狀態』未填寫');
+                    }
+                    else if (Review.Status == 'M' || Review.Status == 'N') {
+                        if (!Review.Check_opinion) {
+                            errors.push('『意見』未填寫');
+                        }
+                    }
+
+                    return errors;
+                },
+
+                View: function (item) {
+                    var me = this;
+                    me.Rec = item;
+                    me.$http.post({
+                        ApiDesc: '單筆資料載入',
+                        url: '@Url.Action("View", "Schedule")',
+                        data: {
+                            Pid : item.Pid
+                        } ,
+                        success: function (result) {
+                            me.RecV = result.Rec;
+                            me.RecSchSBList = result.RecSchSBList;
+                            me.ReviewList = result.ReviewList;
+                            $('#ViewDialog').modal('show');
+                            $('#nav-tab a:eq(0)').tab('show');
+                            me.Rec.CompanyName = item.CompanyName
+                        }
+                    });
+                },
+            },
+
+            created: function () {
+
+                this.GetList(this.Qry);
+                this.GetCityOptions();
+            }
+        });
+
+    </script>
+}

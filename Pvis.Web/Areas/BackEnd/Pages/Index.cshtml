@@ -1,0 +1,34 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.IndexModel
+@using Pvis.Biz.Extension
+@using Pvis.Biz.Models
+@inject Pvis.Biz.Models.DataDbContext _context
+@{
+    ViewData["Title"] = "後台管理";
+    var uid = User.GetCurrentUser().Uid;
+    List<UserPvInfo> result = _context.UserPvInfo.Where(x => x.Uid == User.GetCurrentUser().Uid).ToList();
+    int HaveSp = 0;
+    if (User.HasRole(RoleList.Company))
+    {
+        foreach (var item in result)
+        {
+            int SpQty = _context.UserSpInfo.Where(x => x.Pvid.Value == item.Pid).Count();
+            if (SpQty < item.SpQty)
+            {
+                HaveSp += 1;
+            }
+        }
+    }
+
+
+}
+
+@section Scripts{
+    @if (HaveSp > 0 && User.HasRole(RoleList.Company))
+    {
+        <script>
+            alert("您尚有太陽光電板資料未完成維護，請至基本資料設定功能完成新增太陽光電板資料。");
+        </script>
+    }
+
+}

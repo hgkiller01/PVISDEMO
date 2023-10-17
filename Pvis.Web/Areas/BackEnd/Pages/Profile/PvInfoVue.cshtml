@@ -1,0 +1,515 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Profile.PvInfoVueVueModel
+@using Pvis.Biz.Extension
+@{
+    ViewData["Title"] = "設備登記資料維護";
+}
+@section heads{
+    <link rel="stylesheet" href="//unpkg.com/@@trevoreyre/autocomplete-vue/dist/style.css" />
+}
+
+<div id="app" v-cloak>
+    <environment include="Development">
+        <pre>{{Rec|json}}</pre>
+        <pre>{{AttList|json}}</pre>
+    </environment>
+    <div class="form-inline inline-box">
+        <label for="keyword" class="control-label">關鍵字查詢:</label>
+        <input type="text" class="form-control" id="keyword" v-model="Qry.KeyWord" />
+        <label class="control-label ml-4">啟用狀態:</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="1" />啟用</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="0" />停用</label>
+        <div class="m-auto"></div>
+        <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        <input type="button" value="新增資料" @@click="Edit()" class="btn btn-outline-primary" />
+        @if (User.HasRole(RoleList.Admin))
+        {
+            <input type="button" value="滙出Excel" @@click="ExportExcel(Qry)" class="btn btn-outline-secondary" />
+        }
+    </div>
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center">
+            <thead>
+                <tr>
+                    <th>設備登記編號</th>
+                    <th>設備數量(片)</th>
+                    <th>總裝置容量(瓩)</th>
+                    <th>備案編號</th>
+                    <th>併網日期</th>
+                    <th class="w-10">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{item.Pvno}}</td>
+                    <td>{{item.SpQty}}</td>
+                    <td>{{item.Allkilowatt}}</td>
+                    <td>{{item.Bno}}</td>
+                    <td>{{item.Startdate|formatDate}}</td>
+                    <td>
+                        <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index+pageStart);" />
+                        <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(index+pageStart);" tabindex="-1" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div><!-- 查詢結果 -->
+    <div class="text-right">
+        <partial name="_PagerRecListPartial" />
+    </div><!-- 分頁控制 -->
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]{{Rec.Pvno}}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row" v-if="!Rec.Pid">
+                        <label class="col-md-3 col-form-label req">設備登記編號</label>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" v-model="Rec.Pvno" maxlength="250" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <!--型態(地址1,地號2)-->
+                        <label class="col-md-3 col-form-label req">設置地址</label>
+                        <div class="col-md-9">
+                            <input v-if="Rec.Pvaddr" type="text" class="form-control" v-model="Rec.Pvaddr" value="{{Rec.Pvaddr}}" readonly />
+                            <autocomplete :search="search"
+                                          placeholder="請輸入完整地址"
+                                          aria-label="請輸入完整地址" @@change="handleInput($event,Rec,'Pvaddr')" :default-value="Rec.Pvaddr"></autocomplete>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <!--型態(地址1,地號2)-->
+                        <label class="col-md-3 col-form-label req">地點類型</label>
+                        <div class="col-md-9">
+                            <div class="form-check-inline">
+                                <input type="radio" v-model="Rec.AddrType" value="1" /><label>地址</label>
+                                <input type="radio" v-model="Rec.AddrType" value="2" /><label>地號</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req" for="PETypeID">再生能源發電設備型別及使用能源</label>
+                        <div class="col-md-6">
+                            <select class="form-control" v-model="Rec.PETypeID" id="PETypeID">
+                                <option value="0">請選擇</option>
+                                <option v-for="(val, key) in PowerEquipType" :value="key">{{val}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req" for="Startdate">併網日期</label>
+                        <div class="col-md-6">
+                            <flat-pickr v-model="Rec.Startdate" :config="FlatPickrCfg" placeholder="併網日期" name="FlatPickrCfg" class="form-control w-8" id="Startdate" readonly></flat-pickr>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req">單一設備裝置容量(瓩)</label>
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" v-model="Rec.Kilowatt" maxlength="250" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req">設備數量(片)</label>
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" v-model="Rec.SpQty" maxlength="250" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req">總裝置容量(瓩)</label>
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" v-model="Rec.Allkilowatt" maxlength="250" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req">備案編號</label>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" v-model="Rec.Bno" maxlength="50" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label req">啟用狀態</label>
+                        <div class="col-md-9">
+                            <div class="form-check-inline">
+                                <input type="radio" v-model="Rec.Status" value="1" /><label>啟用</label>
+                                <input type="radio" v-model="Rec.Status" value="0" /><label>停用</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <div class="col-md-6">
+                            <label for="FileLetterOfAgreement"> 設備登記同意函上傳</label>
+                            <span style="color:red">*</span>
+                            <div class="col-md-12">
+                                <div v-if="AttList && AttList.length > 0">
+                                    <ul class="m-0 p-0">
+                                        <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.AccountApp_LetterOfAgreement)">
+                                            <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="file" accept=".pdf" ref="inputFile1" class="form-control-file" id="FileLetterOfAgreement" @@change="FileUpLoadChange($event,Attached.FileLetterOfAgreement,'設備登記同意函附件')" />
+                        </div>
+                    </div>
+                    @*<div class="form-group row" v-if="AttList && AttList.length > 0 ">
+                            <label class="col-md-3 col-form-label">設備登記申請表</label>
+                            <div class="col-md-9">
+                                <ul class="m-0 p-0">
+                                    <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.ApplyDoc)">
+                                        <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>*@
+                    <div class="form-group row">
+                        <div class="col-md-6 ">
+                            <label for="FileApplyDoc">設備登記申請表上傳</label>
+                            <div class="col-md-12" v-if="AttList && AttList.length > 0 ">
+                                <ul class="m-0 p-0">
+                                    <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.ApplyDoc)">
+                                        <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="file" accept=".pdf" ref="inputFile2" class="form-control-file" id="FileApplyDoc" @@change="FileUpLoadChange($event,Attached.FileApplyDoc,'設備登記申請表附件')" />
+                        </div>
+                    </div>
+                    @*<div class="form-group row" v-if="AttList && AttList.length > 0 ">
+                            <label  class="col-md-3 col-form-label req">裝置容量證明文件-產品型錄上傳</label>
+                            <div class="col-md-9">
+                                <ul class="m-0 p-0">
+                                    <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.ProvDoc)">
+                                        <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>*@
+                    <div class="form-group row">
+                        <div class="col-md-6">
+                            <label for="FileProvDoc">裝置容量證明文件-產品型錄上傳 </label>
+                            <span style="color:red">*</span>
+                            <div class="col-md-12 " v-if="AttList && AttList.length > 0 ">
+                                <ul class="m-0 p-0">
+                                    <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.ProvDoc)">
+                                        <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="file" accept=".pdf" ref="inputFile3" class="form-control-file" id="FileProvDoc" @@change="FileUpLoadChange($event,Attached.FileProvDoc,'裝置容量證明文件(型錄及出貨單號)附件')" />
+                        </div>
+                    </div>
+                    @*<div class="form-group row" v-if="AttList && AttList.length > 0 ">
+                            <label class="col-md-3 col-form-label req">裝置容量證明文件-太陽光電模組序號上傳</label>
+                            <div class="col-md-9">
+                                <ul class="m-0 p-0">
+                                    <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.PvSnDoc)">
+                                        <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>*@
+                    <div class="form-group row">
+                        <div class="col-md-6">
+                            <label for="FileProvDoc">
+                                裝置容量證明文件-太陽光電模組序號上傳
+                            </label>
+                            <span style="color:red">*</span>
+                            <div class="col-md-12" v-if="AttList && AttList.length > 0 ">
+                                <ul class="m-0 p-0">
+                                    <li v-for="(item,index) in AttList" v-if="item.ItemType == @((int)eItemType.PvSnDoc)">
+                                        <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="file" accept=".pdf" ref="inputFile4" class="form-control-file" id="FileProvDoc" @@change="FileUpLoadChange($event,Attached.FilePvSnDoc,'裝置容量證明文件-太陽光電模組序號')" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @@click="Save(Rec,Attached,'Edit');">存檔</button>
+                    <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                </div>
+                <environment include="Development">
+                    <pre>{{Rec|json}}</pre>
+                    <pre>{{AttList|json}}</pre>
+                </environment>
+            </div>
+
+        </div>
+    </div><!-- 編輯框 -->
+    <iframe :src="ExportUrl" style="display:none">
+    </iframe>
+</div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/Enum.js"></script>
+    <script src="//unpkg.com/@@trevoreyre/autocomplete-vue"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],
+                AttList: [],
+                Attached: {
+                    FileLetterOfAgreement: { HasFile: false },
+                    FileApplyDoc: { HasFile: false },
+                    FileProvDoc: { HasFile: false },
+                    FilePvSnDoc: { HasFile: false }
+                },
+                Rec: {},
+                Qry: {},
+                Towns: @Html.Raw(Json.Serialize(Model.Towns)) ,
+                PowerEquipType: Enum.PowerEquipType,
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+                Action: "ADD",
+                ExportUrl: "about:blank"
+            },
+            components: {
+                'Autocomplete':Autocomplete
+            },
+            methods: {
+                ExportExcel: function (Qry) {
+                    var me = this;
+                    me.ExportUrl = "@Url.Content("~/api/UserPvInfo/DownLoadExcel")"
+                    var haskeyword = false;
+                    if (Qry.KeyWord) {
+                        me.ExportUrl += "?KeyWord=" + Qry.KeyWord;
+                        haskeyword = true;
+                    }
+                    if (Qry.Status) {
+                        if (haskeyword) {
+                            me.ExportUrl += "&";
+                        } else {
+                            me.ExportUrl += "?"
+                        }
+                        me.ExportUrl += "Status=" + Qry.Status
+                    }
+                    
+                },
+                handleInput: function (e, v, f) {
+                    v[f] = e.target.value;
+                    this.$forceUpdate();
+                },
+                search: function (input) {
+                    var me = this;
+                    if (input.length < 1) { return [] }
+                    input = input.replace(/台/, "臺");
+                    return me.Towns.filter(function (Town) {
+                        return Town.indexOf(input) > -1;
+                    });
+                },
+                View: function (item) {
+                    this.Rec = item;
+                    $('#ViewDialog').modal("show");
+                },
+                Edit: function (item, index) {
+                    var me = this;
+                    me.Rec = item || {
+                        Uid: "0",
+                        Pvaddr: "",
+                        AddrType: "1",
+                        Status: "1"
+                    };
+                    if (item)
+                        me.Action = "Edit";
+                    else
+                        me.Action = "ADD";
+                    me.$refs.inputFile1.value = null;
+                    me.$refs.inputFile2.value = null;
+                    me.$refs.inputFile3.value = null;
+                    me.$refs.inputFile4.value = null;
+                    me.Attached = {
+                        FileLetterOfAgreement: { HasFile: false },
+                        FileApplyDoc: { HasFile: false },
+                        FileProvDoc: { HasFile: false },
+                        FilePvSnDoc: { HasFile: false }
+                    };
+                    me.FileLetterOfAgreement = "";
+                    me.FileApplyDoc = "";
+                    me.FileProvDoc = "";
+                    me.AttList = [];
+                    $('#ModifyDialog').modal("show");
+                    if (!this.Rec.Pid) return;
+
+                    this.$http.post({
+                        ApiDesc: "單筆資料載入",
+                        url: "@Url.Content("~/api/UserPvInfo/GetItem")",
+                        data: {
+                            Pid: this.Rec.Pid
+                        },
+                        success: function (_Result) {
+                            me.Rec = _Result.Rec;
+                            me.Rec.EditIndex = index;
+                            me.AttList = _Result.AttList;
+                        }
+                    });
+                },
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/UserPvInfo/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/UserPvInfo/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+                Delete: function (index) {
+                    var me = this;
+                    UiHelper.confirm("確定要刪除這筆資料!?", function () {
+                        me.$http.post({
+                            ApiDesc: "資料刪除",
+                            url: "@Url.Content("~/api/UserPvInfo/Delete")",
+                            data: me.RecList[index],
+                            success: function (_Result) {
+                                UiHelper.ShowMsg("資料已刪除。");
+                                me.RecList.splice(index, 1);
+                            }
+                        });
+                    });
+                },
+                FileUpLoadChange: function (e, att, describe) {
+                    var me = this;
+                    att.HasFile = false;
+                    delete att.f;
+                    var files = e.target.files || e.dataTransfer.files;
+                    if (!files.length) return;
+                    UiHelper.GetFile(files[0], function (f) {
+                        var _Err = [];
+                        if (!(/\.pdf$/i).test(f.name)) _Err.push(describe + "只能上傳Pdf格式檔案");
+                        if (f.size / (1024 * 1024) > 10) _Err.push(describe + "檔案不能超過10MB");
+                        if (_Err.length > 0) {
+                            UiHelper.alert("<ul><li>" + _Err.join("</li><li>") + "</li>");
+                            return;
+                        }
+                        me.IsShowUpLoadBtn = (_Err.length <= 0);
+                        att.HasFile = true;
+                        att.f = f;
+                    });
+                },
+                /**
+                 * 基本表單前端資料檢核
+                 * @@param { any } Rec 主要申請資料表
+                 * @@param { any } Att 相關附件
+                 * @@returns { Array } 錯誤明細清單
+                 */
+                FormCheck: function (Rec, Att, ln) {
+                    var errors = [];
+                    Attachment = {};
+
+                    if (!Rec.Startdate) errors.push("『併網日期』未填寫");
+                    if (!Rec.Pvaddr) errors.push("『設置地址』未填寫");
+                    if (!Rec.Pvno) errors.push("『設備登記編號』未填寫");
+                    if (!Rec.Bno)  errors.push("『備案編號』未填寫");
+                    if (!Rec.Kilowatt) errors.push("『單一設備裝置容量』未填寫");
+                    if (isNaN(Rec.Kilowatt)) errors.push("『單一設備裝置容量』需為數值");
+                    if (!Rec.Allkilowatt) errors.push("『總裝置容量』未填寫");
+                    if (isNaN(Rec.Allkilowatt)) errors.push("『總裝置容量』需為數值");
+                    if (!Rec.SpQty) errors.push("『設備數量』未填寫");
+                    if (isNaN(Rec.SpQty)) errors.push("『設備數量』需為數值");
+                    if (!Rec.PETypeID) errors.push("『再生能源發電設備型別及使用能源』未填寫");
+
+                    if (!Att.FileLetterOfAgreement.HasFile && ln == 0) {
+                        errors.push("『設備登記同意函』附件未提供");
+                    } else {
+                        Attachment["@eItemType.AccountApp_LetterOfAgreement.ToString()"] = Att.FileLetterOfAgreement.f;
+                    }
+                    if (!Att.FileApplyDoc.HasFile) {
+                        //errors.push("『設備登記申請表』附件未提供");
+                    } else {
+                        Attachment["@eItemType.ApplyDoc.ToString()"] = Att.FileApplyDoc.f;
+                    }
+                    if (!Att.FileProvDoc.HasFile && ln == 0) {
+                        errors.push("『產品型錄』附件未提供");
+                    } else {
+                        Attachment["@eItemType.ProvDoc.ToString()"] = Att.FileProvDoc.f;
+                    }
+                    if (!Att.FilePvSnDoc.HasFile && ln == 0) {
+                        errors.push("『太陽光電模組序號』附件未提供");
+                    } else {
+                        Attachment["@eItemType.PvSnDoc.ToString()"] = Att.FilePvSnDoc.f;
+                    }
+
+                    return errors;
+                },
+                /**
+                 * 案件送出
+                 * @@param { any } Rec 主要申請資料表
+                 * @@param { any } Att 相關附件
+                 */
+                Save: function (Rec, Att) {
+                    var me = this;
+                    Rec.Pvno = Rec.Pvno.toUpperCase();
+                    var errors = [];
+                    if (me.Action == "ADD") {
+                        errors = me.FormCheck(Rec, Att, 0);
+                    } else {
+                        errors = me.FormCheck(Rec, Att, 1);
+                    }
+
+                    if (errors.length) {
+                        UiHelper.ClearMsg().ShowErr(errors, 6000);
+                        return;
+                    }
+                    RecAll = { 'Rec': Rec, 'Attachment': Attachment }
+                    me.$http.post({
+                        ApiDesc: "儲存設備登記資料",
+                        url: "@Url.Action("Save","UserPvInfo")",
+                        data: RecAll,
+                        success: function (_Result) {
+                            if (me.Rec.hasOwnProperty('EditIndex')) {
+                                me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                            } else {
+                                me.RecList.unshift(_Result.Rec);
+                            }
+                            me.$forceUpdate();
+                            $('#ModifyDialog').modal("hide");
+                        }
+                    });
+                }
+            },
+            created: function () {
+                this.Load();
+            }
+        });
+    </script>
+}

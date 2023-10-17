@@ -1,0 +1,103 @@
+﻿@page
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "清除處理機構";
+}
+
+@section heads{
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/jexcel@2.1.0/dist/css/jquery.jexcel.css">
+}
+<div class="nav nav-tabs" id="nav-tab" role="tablist">
+    <a class="nav-item nav-link active" data-toggle="tab" href="#cle" role="tab">清除機構</a>
+    <a class="nav-item nav-link" data-toggle="tab" href="#tre" role="tab">處理機構</a>
+</div>
+<div class="tab-content tab-content-border">
+    <div class="tab-pane active" id="cle" role="tabpanel">
+        <div class="form-inline inline-box" data-id="clean">
+            <button class="btn btn-sm btn-primary save">存檔</button>
+            <div class="mx-4"></div>
+            <button class="btn btn-sm btn-outline-dark download">下載</button>
+            <button class="btn btn-sm btn-outline-success reload">重新載入</button>
+        </div>
+        <div class="jexcel-rwd">
+            <div id="clean"></div>
+        </div>
+        <div><input type="button" class="btn btn-sm btn-outline-dark" value="新增1列" onclick="$('#clean').jexcel('insertRow')" /></div>
+    </div>
+    <div class="tab-pane" id="tre" role="tabpanel">
+        <div class="form-inline inline-box" data-id="treat">
+            <button class="btn btn-sm btn-primary save">存檔</button>
+            <div class="mx-4"></div>
+            <button class="btn btn-sm btn-outline-dark download">下載</button>
+            <button class="btn btn-sm btn-outline-success reload">重新載入</button>
+        </div>
+        <div class="jexcel-rwd">
+            <div id="treat"></div>
+        </div>
+        <div><input type="button" class="btn btn-sm btn-outline-dark" value="新增1列" onclick="$('#treat').jexcel('insertRow')" /></div>
+    </div>
+</div>
+@section Scripts{
+    <script src="//cdn.jsdelivr.net/combine/npm/jexcel@2.1.0/dist/js/jquery.csv.min.js,npm/jexcel@2.1.0/dist/js/jquery.jexcel.min.js"></script>
+    <script>
+        /** 設置jexcel
+         * @@param { String } id 容器id
+         */
+        $(function () {
+            $("#jexcel_textarea").before("<label for='jexcel_textarea'></label>");
+        })
+        function setJexcel(id) {
+            var url = '@Url.Content("~/mgr/organ")' + id + '.json' + '?' + new Date().getTime();
+            var opt = {
+                csvFileName: id,
+                csvHeaders: true,
+                data: [],
+                colHeaders: ['縣市別', '機構名稱', '級別', '機構電話'],
+                colWidths: [80, 400, 60, 150],
+                tableOverflow: true,
+                tableHeight: '60vh',
+            }
+
+            $.getJSON(url, function (json) {
+                opt.data = json.data;
+            }).always(function () {
+                $('#' + id).jexcel(opt);
+            });
+        }
+
+        setJexcel('clean');
+        setJexcel('treat');
+
+        // 重新載入
+        $('.reload').on('click', function () {
+            var id = $(this).closest('div').data('id');
+            $('#' + id).jexcel('destroy');
+            setJexcel(id);
+        });
+        // 下載
+        $('.download').on('click', function () {
+            var id = $(this).closest('div').data('id');
+            $('#' + id).jexcel('download', true);
+        });
+        // 存檔
+        $('.save').on('click', function () {
+            var id = $(this).closest('div').data('id');
+            var organ = {
+                type: id,
+                data: JSON.stringify($('#' + id).jexcel('getData'))
+            };
+
+            $.ajax({
+                url: '@Url.Action("Save", "Organ")',
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(organ)
+            }).done(function () {
+                alert('存檔成功')
+            }).fail(function (xhr) {
+                alert(xhr.responseText)
+            });
+        });
+    </script>
+}

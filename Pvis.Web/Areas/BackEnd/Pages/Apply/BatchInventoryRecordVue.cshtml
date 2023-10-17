@@ -1,0 +1,197 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.BatchInventoryRecordVueModel
+@{
+}
+@{
+    var a = ViewData["DailyData"] as IList<Pvis.Web.Areas.BackEnd.Pages.Apply.BatchInventoryRecordVueModel.PvVM>;
+    var r = ViewData["RecordItemLists"] as IList<Pvis.Web.Areas.BackEnd.Pages.Apply.BatchInventoryRecordVueModel.CountVM>;
+    var d = ViewData["DailyRecordData"] as IList<Pvis.Web.Areas.BackEnd.Pages.Apply.BatchInventoryRecordVueModel.RecordVM>;
+    decimal Remain = 0;
+}
+<style type="text/css">
+    table.table-bordered, tr, th, td, tbody, thead,
+    tbody [rowspan],
+    tbody [rowspan] ~ th,
+    tbody [rowspan] ~ td,
+    tbody [colspan] ~ th,
+    tbody [colspan] ~ td,
+    tbody > td,
+    tbody > tr,
+    table.table-bordered td,
+    table.table-bordered th {
+        border: 2px solid !important;
+        border-color: black !important;
+    }
+    @@media print {
+        #printButton {
+            display: none;
+        }
+    }
+    html {
+        background-color: #f8f9fc !important;
+    }
+</style>
+@if (a == null || r == null || d == null ||a.Count == 0 || r.Count == 0 || d.Count == 0)
+{
+    <h1>資料不足，暫時無法產生報表</h1>
+}
+else
+{
+
+    <div id="contents">
+        <br />
+        <input id="printButton" type="button" style="margin-bottom:10px;" class="btn btn-outline-primary" value="列印" onclick="printMe();" />
+        <br />
+        <h2 class="mt-3" style="text-align:center;">批次盤點紀錄表</h2>
+        <br />
+        <table class="table table-bordered rwd-table">
+            <tr>
+                <td width="50%">
+                    處理廠/貯存場機構名稱：@ViewData["CompanyName"].ToString()
+                </td>
+                <td width="50%">
+                    稽核行程編號：@ViewData["No"].ToString()
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    作業區間：@ViewData["WorkDuration"]
+                </td>
+                <td class="text-center" style="vertical-align:middle;">
+                    重量單位：公斤
+                </td>
+            </tr>
+        </table>
+        <table class="table table-bordered mt-2 w-50">
+            <tr>
+                <td style="background-color:#fff0be;">允收稽核日期</td>
+                <td>@ViewData["Pre_Date"]</td>
+            </tr>
+            <tr>
+                <td style="background-color:#fff0be;">本次廢PV進場|片數</td>
+                <td>
+                    @ViewData["PvImportPiece"]片
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color:#fff0be;">本次廢PV進場|重量</td>
+                <td>@ViewData["PvWeightTotal"]公斤</td>
+            </tr>
+            <tr>
+                <td style="background-color:#fff0be;">包裝材重量</td>
+                <td>@ViewData["PkgWeightTotal"]公斤</td>
+            </tr>
+        </table>
+        <table class="table table-bordered rwd-table mt-2 text-center">
+            <tr>
+                @{
+                    <td rowspan="@(a.Count+2)" style="background-color: #fff0be; vertical-align: middle;">
+                        廢PV
+                    </td>
+                }
+                <td rowspan="2" style="background-color:#fff0be; vertical-align:middle;">作業日期</td>
+                <td colspan="2">本日處理量<span style="font-size:8pt;">T</span></td>
+                <td colspan="2">本日結存<span style="font-size:8pt;">B</span></td>
+            </tr>
+            <tr>
+                <td>片數</td>
+                <td>重量</td>
+                <td>片數</td>
+                <td>重量</td>
+            </tr>
+            @{
+                @for (int i = 0; i < a.Count; i++)
+                {
+                    <tr>
+                        <td>@a[i].Date.ToString("yyyy-MM-dd")</td>
+                        <td>@a[i].DealPiece.ToString()</td>
+                        <td>@a[i].DealWeight.ToString()</td>
+                        <td>@a[i].RemainingPiece.ToString()</td>
+                        <td>@a[i].RemainingWeight</td>
+                    </tr>
+                }
+            }
+            <tr>
+                <td colspan="6" style="text-align:left;">
+                    <span>本日結存<span style="font-size:8pt;">B</span> = 本日進廠<span style="font-size:8pt;">I</span> - 本日處理量<span style="font-size:8pt;">T</span></span>
+                </td>
+            </tr>
+        </table>
+        <table class="table table-bordered rwd-table mt-5 text-center">
+            @for (int i = 0; i < r.Count; i++)
+            {
+                Remain = 0;
+                <tr>
+                    <td rowspan="@(d.Where(q => q.CodeNo == r[i].CodeNo).ToList().Count + 2)" style="background-color: #dcf1b2; vertical-align: middle;">處理產出物@(i+1)</td>
+                    <td rowspan="2" style="background-color: #fff0be; vertical-align: middle;">作業日期</td>
+                    <td rowspan="2" style="vertical-align:middle;">物料名稱</td>
+                    <td rowspan="2" style="vertical-align:middle;">代碼</td>
+                    <td>本日處理產出T</td>
+                    <td>本日出廠O</td>
+                    <td>本日結存B</td>
+                </tr>
+                <tr>
+                    <td>重量</td>
+                    <td>重量</td>
+                    <td>重量</td>
+                </tr>
+                @for (int k = 0; k < d.Where(q => q.CodeNo == r[i].CodeNo).ToList().Count; k++)
+                {
+                    <tr>
+                        <td class="align-middle">@(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].Date?.ToString("yyyy-MM-dd"))</td>
+                        <td class="align-middle" style="width:30%">@(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].CodeName)</td>
+                        <td class="align-middle">@(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].CodeNo)</td>
+                        @if (d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].Fn == "D")
+                        {
+                            Remain += Convert.ToDecimal(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].Weight.Value);
+                            <td class="align-middle">@(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].Weight.ToString())</td>
+                            <td class="align-middle">0</td>
+                            <td class="align-middle">@Remain</td>
+                        }
+                        else
+                        {
+                            Remain -= Convert.ToDecimal(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].Weight.Value);
+                            <td class="align-middle">0</td>
+                            <td class="align-middle">@(d.Where(q => q.CodeNo == r[i].CodeNo).ToList()[k].Weight.ToString())</td>
+                            <td class="align-middle">@Remain</td>
+                        }
+
+                    </tr>
+                }
+                <tr>
+                    <td colspan="7">&nbsp;</td>
+                </tr>
+            }
+
+            <tr>
+                <td colspan="7" style="text-align:left;">
+                    <span>本日結存<span style="font-size:8pt;">B</span> = 本日處理產出<span style="font-size:8pt;">T</span> - 本日出廠<span style="font-size:8pt;">O</span></span>
+                </td>
+            </tr>
+            <tr>
+                <td>處理場/貯存場<br />機構簽名/蓋章</td>
+                <td colspan="3"></td>
+                <td>稽核單位<br />簽名/蓋章</td>
+                <td colspan="2"></td>
+            </tr>
+            <tr>
+                <td colspan="7" style="text-align:left;">
+                    <span>
+                        註：<br />
+                        1.貯存廠應忽略「本批次處理」相關欄位<br />
+                        2.表格如不敷使用請，自行增列
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <br /><br /><br />
+    </div>
+}
+
+@section Scripts{
+    <script>
+        function printMe() {
+            window.print()
+        }
+    </script>
+}

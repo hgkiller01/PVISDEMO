@@ -1,0 +1,244 @@
+﻿@page
+@{
+    ViewData["Title"] = "設備登記資料查詢";
+}
+
+    <div id="app" v-cloak>
+        <environment include="Development">
+            <pre>{{Rec|json}}</pre>
+            <pre>{{Qry|json}}</pre>
+        </environment>
+        <div class="form-inline inline-box">
+            <label for="Applicant" class="control-label">申請人查詢:</label>
+            <input type="text" class="form-control" id="Applicant" v-model="Qry.Applicant" />
+            <label for="City" class="control-label">縣市:</label>
+            <select class="form-control" v-model="Qry.City" id="City">
+                <option value="">不限</option>
+                <option v-for="option in CityOptions" :value="option.CountyName">{{option.CountyName}}</option>
+            </select>
+            <label for="PVNo" class="control-label">設備登記編號:</label>
+            <input type="text" class="form-control" id="PVNo" v-model="Qry.PVNo" />
+            <label for="Dt" class="control-label ml-4">預計除役日期:</label>
+            <flat-pickr v-model="Qry.StartDt" :config="FlatPickrCfg" placeholder="開始日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+            ～<flat-pickr v-model="Qry.EndDt" :config="FlatPickrCfg" placeholder="結束日期" name="FlatPickrCfg" class="form-control text-center" style="width:8rem;"></flat-pickr>
+            <div class="m-auto"></div>
+            <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        </div>
+        <div class="form-inline inline-box">
+            <label for="PETypeID" class="control-label">太陽光電發電設備型別:</label>
+            <select class="form-control" v-model="Qry.PETypeID" id="PETypeID">
+                <option value="0">請選擇</option>
+                <option v-for="(val, key) in PowerEquipType" :value="key">{{val}}</option>
+            </select>
+        </div>
+        <div class="text-right">
+            <br />
+            <label class="control-label">資料更新日期:2019.10.18</label>
+        </div>
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>設備登記編號</th>
+                        <th>申請人</th>
+                        @*<th>負責人</th>*@
+                        <th>單一設備裝置容量(瓩)</th>
+                        <th>設備數量(片)</th>
+                        @*<th>總裝置容量(瓩)*@
+                        <th>設置場址(地址)</th>
+                        <th>設置場址(地號)</th>
+                        @*<th>同意備案編號</th>*@
+                        <th>完工併聯日期</th>
+                        <th>預計除役日期</th>
+                        <th class="w-13">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td>{{item.PVNo}}</td>
+                        <td>{{item.Applicant}}</td>
+                        @*<td>{{item.Supervisor}}</td>*@
+                        <td>{{item.Kilowatt}}</td>
+                        <td>{{item.SpQty}}</td>
+                        @*<td>{{item.AllKilowatt}}</td>*@
+                        <td>{{item.PVAddr}}</td>
+                        <td>{{item.PVCadastre}}</td>
+                        @*<td>{{item.BNo}}</td>*@
+                        <td>{{item.FinDate | formatDate}}</td>
+                        <td>{{item.DecomDate | formatDate}}</td>
+                        <td>
+                            <input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item);" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <partial name="_PagerRecListPartial" />
+        </div><!-- 分頁控制 -->
+        <div id="ViewDialog" class="modal fade text-left" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">[檢視]{{RecV.PVNo}}</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-sm table-bordered">
+                            <tr class="text-center bg-gray-200">
+                                <th>出廠日期 </th>
+                                <th>出貨單號 </th>
+                                <th>設備廠牌 </th>
+                                <th>設備型號 </th>
+                                <th>設備序號 </th>
+                                <th>單一裝置容量 (瓩)</th>
+                            </tr>
+                            <tr v-for="r in RecV">
+                                <td>{{r.ExFacDate | formatDate}}</td>
+                                <td>{{r.Shipno}}</td>
+                                <td>{{r.Brand}}</td>
+                                <td>{{r.Module}}</td>
+                                <td>{{r.Sno}}</td>
+                                <td>{{r.Kilowatt}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div><!-- 檢視框 -->
+
+        <input type="button" value="查詢結果下載" @@click="GetExcel(Qry)" class="btn btn-outline-success" />
+        <div class="text-left">
+            <br />
+            <label class="control-label">備註: 預計除役日期為併聯日期自動核算7,300天後之日期</label>
+        </div>
+    </div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/Enum.js"></script>
+    <script src="~/js/downloadxlsx.js"></script>
+    <!--使用JS-XLSX操作xlsx-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/xlsx.full.min.js"></script>
+    <!--使用FileSaver下載資料成為檔案-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            mixins: [MixinPagerRecList],
+            data: {
+                RecList: [],
+                Rec: {},
+                RecV: {},
+                Qry: {},
+                CityOptions: [],
+                PowerEquipType: Enum.PowerEquipType,
+                FlatPickrCfg: {
+                    altInput: false,
+                    allowInput: true,
+                    minuteIncrement: 10
+                },
+            },
+            methods: {
+                GetCityOptions: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "取得縣市",
+                        url: "@Url.Action("GetCityOptions","ApplyPvList")",
+                        data: {},
+                        success: function (_Result) {
+                            me.CityOptions = _Result;
+                            return;
+                        }
+                    });
+                },
+                Load: function () {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料載入",
+                        url: "@Url.Content("~/api/ApplyPvList/Load")",
+                        data: {},
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                            return;
+
+                            if (_Result.IsSuccess === false) {
+                                UiHelper.ShowErr(_Result.Msg);
+                                return;
+                            }
+                            UiHelper.ShowMsg(_Result.Msg);
+                            me.RecList = _Result.RecList;
+                        }
+                    });
+                },
+                GetList: function (Qry) {
+                    var me = this;
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/ApplyPvList/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+                            me.RecList = _Result;
+                        }
+                    });
+                },
+
+                View: function (item) {
+                    var me = this;
+                    me.Rec = item;
+                    me.$http.post({
+                        ApiDesc: '單筆資料載入',
+                        url: '@Url.Action("View", "ApplyPvList")',
+                        data: {
+                            PVNo : item.PVNo
+                        } ,
+                        success: function (result) {
+                            me.RecV = result;
+                            if (me.RecV.length > 0) {
+                                $('#ViewDialog').modal('show');
+                            }
+                            else {
+                                UiHelper.ShowMsg("查無資料");
+                            }
+                        }
+                    });
+                },
+
+                GetExcel: function (Qry) {
+                    var me = this;
+                    //檔名
+                    var filename = 'download.xlsx';
+                    //表名
+                    var sheetname = '設備登記資料查詢';
+                    this.$http.post({
+                        ApiDesc: "資料查詢",
+                        url: "@Url.Content("~/api/ApplyPvList/GetList")",
+                        data: Qry,
+                        success: function (_Result) {
+
+                            var tmp = [['設備登記編號', '申請人類別', '申請人', '申請人地址'
+                                        , '負責人', '單一設備裝置容量(瓩)', '設備數量(片)', '總裝置容量(瓩)'
+                                        , '設置場址(地址)', '設置場址(地號)', '同意備案編號', '同意備案日期'
+                                        , '完工併聯日期', '設備登記核准日期']]
+                            for( let i = 0 ; i < _Result.length ; i++ ){
+
+                                data = [[_Result[i].PVNo, _Result[i].ApplicantType, _Result[i].Applicant, _Result[i].ApplicantAddr
+                                        , _Result[i].Supervisor, _Result[i].Kilowatt, _Result[i].SpQty, _Result[i].AllKilowatt
+                                        , _Result[i].PVAddr, _Result[i].PVCadastre, _Result[i].BNo, FormatDate(_Result[i].BAppDate)
+                                        , FormatDate(_Result[i].FinDate), FormatDate(_Result[i].PVAppDate)]];
+                                tmp = tmp.concat(data)
+                            }
+                            downloadxlsx(filename, sheetname, tmp);
+                        }
+                    });
+                },
+            },
+            created: function () {
+
+                this.Load();
+                this.GetCityOptions();
+            }
+        });
+
+    </script>
+}

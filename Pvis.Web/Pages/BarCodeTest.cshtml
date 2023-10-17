@@ -1,0 +1,12 @@
+﻿@page
+@model Pvis.Web.Pages.BarCodeTestModel
+@{
+    ViewData["Title"] = "TEST";
+}
+
+<component type="typeof(ScanBarCode)" render-mode="ServerPrerendered" />
+@section Scripts{
+    <script src="_framework/blazor.server.js"></script>
+    <script src="~/lib/barcodereader/zxing.js"></script>
+    <script src="~/lib/barcodereader/barcode.js"></script>
+}

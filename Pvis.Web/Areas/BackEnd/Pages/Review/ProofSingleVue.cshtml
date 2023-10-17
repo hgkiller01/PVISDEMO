@@ -1,0 +1,437 @@
+﻿@page
+@using Pvis.Biz.Extension;
+@using Pvis.Biz.CommEnum;
+@model Pvis.Web.Areas.BackEnd.Pages.Review.ProofSingleVueModel
+@{
+}
+<div id="app" v-cloak>
+    <div v-if="Action == 'From'">
+        <h5>稽核量-產出證明單</h5>
+        <table class="table table-bordered">
+            <tr>
+                <td>機構類別</td>
+                <td>{{RoleKind}}</td>
+            </tr>
+            <tr>
+                <td>處理廠/貯存場機構名稱</td>
+                <td>{{EditData.CompanyName}}</td>
+            </tr>
+            <tr>
+                <td>核發月份</td>
+                <td>
+                    <select class="form-control" v-model="EditData.Month">
+                        <option selected value="1">1月</option>
+                        <option value="2">2月</option>
+                        <option value="3">3月</option>
+                        <option value="4">4月</option>
+                        <option value="5">5月</option>
+                        <option value="6">6月</option>
+                        <option value="7">7月</option>
+                        <option value="8">8月</option>
+                        <option value="9">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>案場排出允收稽核說明</td>
+                <td>
+                    <textarea class="form-control" rows="4" v-model="EditData.PreDesc"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>清除稽核說明</td>
+                <td>
+                    <textarea class="form-control" rows="4" v-model="EditData.CleDesc"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>處理/境外處理/貯存稽核說明</td>
+                <td>
+                    <textarea class="form-control" rows="4" v-model="EditData.OtherDesc"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>稽核行程編號</td>
+                <td>
+                    <select class="form-control" v-model="EditData.Aud_Sch_No">
+                        <option v-for="Aud in AudList" :value="Aud">{{Aud}}</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>案場排出表稽核結果檔案上傳</td>
+                <td>
+                    <span v-if="EditData.UrlContent != ''"><a :href="urlContent(EditData.UrlContent)">{{EditData.OriginalFileName}}</a></span>
+                    <input type="file" accept=".pdf" class="form-control-file" id="AuditOperation" @@change="FileUpLoadChange($event,Attached.AuditOperation,'案場排出表稽核結果')" />
+                </td>
+            </tr>
+        </table>
+        <div class="form-group row">
+            <label class="col-md-3 control-label" for="AuditOperation"></label>
+            <div class="col-md-9">
+                
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-4">
+
+            </div>
+            <div class="col-8">
+                <button class="btn btn-success" @@click="SaveAndView(Attached,'')">儲存並預覽</button>
+                <button v-if="HadData" class="btn btn-dark" @@click="SaveAndView(Attached,'1')">產出證明單</button>
+                <button class="btn btn-outline-secondary" @@click="Back()">回上一頁</button>
+            </div>
+        </div>
+    </div>
+    <div class="row" v-if="Action == 'List'">
+        <!-- 查詢結果 -->
+        <div class="table-responsive-md col-12">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>
+                            處理廠/貯存場
+                            機構名稱
+                        </th>
+                        <th>完成稽核認證數量(場次數)</th>
+                        <th>尚未產出證明單(場次數)</th>
+                        <th>已產出證明單(場次數)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                        <td>{{item.CompanyName}}</td>
+                        <td>{{item.CompleteCount}}</td>
+                        <td><span style="cursor:pointer;color:blue;" @@click="Add(item)">{{item.UnCompleteCount}}</span></td>
+                        <td><span style="cursor:pointer;color:blue;" @@click="GoSub(item)">{{item.FinishCount}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- 分頁控制 -->
+        <div class="text-right col-12">
+            <partial name="_PagerRecListPartial" />
+        </div>
+        <div class="col-12">
+            說明：<br />
+            1.完成稽核認證數量：指處理廠/貯存場提出申請稽核，並且由稽核小組審查通過之稽核行程場次數量。<br />
+            2.尚未產出證明單：指稽核小組審查通過但尚未套印產製證明單之稽核行程場次數量。<br />
+            3.已產出證明單：指稽核小組已套印產製證明單之稽核行程場次數量數量，一張證明單僅可套印1場次稽核行程場次。<br />
+        </div>
+    </div>
+    <div v-if="Action=='SubList'">
+        <h4>稽核量-證明單列表</h4>
+        <h5>業者名稱： {{CompanyName}}</h5>
+        <button @@click="Back('List')" class="btn btn-outline-primary">回上一頁</button>
+        <div class="table-responsive-md">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>證明單編號</th>
+                        <th>稽核行程編號</th>
+                        <th>案廠排出登記表編號</th>
+                        <th>案場排出表稽核結果</th>
+                        <th>功能操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(Sitem,index) in RecSchSBList.slice(pageViewStart, pageViewStart + countViewOfPage)">
+                        <td>{{Sitem.Proof.ProofNo}}</td>
+                        <td>{{Sitem.Proof.Aud_Sch_No}}</td>
+                        <td>{{Sitem.Bookings.join("、")}}</td>
+                        <td><a v-if="Sitem.DownLoadUrl" :href="urlContent(Sitem.DownLoadUrl)" target="_blank">下載</a></td>
+                        <td>
+                            <button v-if="Sitem.Proof.IsOutput" @@click="PrintPr(Sitem)" class="btn btn-outline-info">套印證明單</button>
+                            <button v-if="!Sitem.Proof.IsOutput" @@click="Edit(Sitem.Proof.ProofNo)" class="btn btn-outline-primary">編輯</button>
+                            @if (User.HasRole(RoleList.Admin))
+                            {
+                                <button @@click="Delete(Sitem)" class="btn btn-outline-danger">刪除</button>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- 查詢結果 -->
+        <div class="text-right">
+            <partial name="_PagerRecViewListPartial" />
+        </div>
+    </div>
+    <form id="SendCode" target="_blank" asp-antiforgery="true" asp-page="/Review/ProofSingleReportVue" method="post">
+        <input type="hidden" id="Aud_Sch_No" name="No" />
+        <input type="hidden" id="ProofNo" name="ProofNo" />
+    </form>
+</div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <script src="~/js/MixinPagerRecViewList.js"></script>
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>        
+    </environment>
+    <script>
+    var app = new Vue({
+        el: '#app',
+        mixins: [MixinPagerRecList, MixinPagerRecViewList],
+        data: {
+            RecList: [],
+            RecSchSBList:[],
+            AttList: [],
+            Rec: {},
+            AudList: [],
+            AudSingle: {},
+            Qry: {},
+            Attached: {
+                AuditOperation: { HasFile: false }
+            },
+            EditData: {
+                Uid : 0
+            },
+            Action : "List",
+            RoleKind: "",
+            CompanyName: "",
+            HadData: false,
+            ProofNo: ""
+        },
+        methods: {
+             /**
+             * 位址轉換
+             * @@param {string} path 相對位址
+             * @@returns { string } 絕對位址
+             */
+            urlContent: function (path) {
+                if (path) {
+                    var root = '@Url.Content("~/")';
+                    return path.replace('~/', root);
+                } else {
+                    return "#";
+                }
+
+            },
+            Back: function (item) {
+                var self = this;
+                if (item) {
+                    self.Action = "List";
+                    self.GetList();
+                    return;
+                }
+                if (self.EditData.PsId > 0) {
+                    self.Action = "SubList"
+                    self.GoSub({ Uid:self.EditData.Uid })
+                } else {
+                    self.Action = "List";
+                    self.GetList();
+                }
+
+            },
+            GetList: function () {
+                var me = this;
+                me.$http.post({
+                    ApiDesc: '資料查詢',
+                    url: '@Url.Content("~/api/ProofSingle/GetProofList")',
+                    data: {},
+                    success: function (result) {
+                        me.RecList = result;
+                    }
+                });
+            },
+            GoSub: function (item) {
+                var me = this;
+                me.Action = "SubList";
+                me.$http.post({
+                    ApiDesc: '資料查詢',
+                    url: '@Url.Content("~/api/ProofSingle/GetProofSBList")',
+                    data: item,
+                    success: function (result) {
+                        me.RecSchSBList = result.models;
+                        me.CompanyName = result.CompanyName;
+                    }
+                });
+            },
+            GetAudList: function (item) {
+                var self = this;
+                self.$http.post({
+                    ApiDesc: "取得稽核編號",
+                    url: "@Url.Content("~/api/ProofSingle/GetAudList")",
+                    data: { Uid: self.EditData.Uid },
+                    success: function (result) {
+                        self.AudList = result.Aud_Sch_No;
+                        if (!self.EditData.Aud_Sch_No)
+                            self.EditData.Aud_Sch_No = self.AudList[0];
+                        self.EditData.CompanyName = result.CompanyName;
+                        self.EditData.RoleKind = result.RoleKind;
+                        if (item) {
+                            self.AudList.push(item);
+                        }
+                        self.RoleList();
+                    }
+                })
+            },
+            RoleList: function () {
+                var self = this;
+                switch (self.EditData.RoleKind) {
+                    case 32:
+                        self.RoleKind = "處理業者";
+                        break;
+                    case 64:
+                        self.RoleKind = "貯存業者";
+                        break;
+                    default:
+                        self.RoleKind = "";
+                        break;
+                }
+            },
+            FileUpLoadChange: function (e, att, describe) {
+                var me = this;
+                att.HasFile = false;
+                delete att.f;
+                var files = e.target.files || e.dataTransfer.files;
+                if (!files.length) return;
+                UiHelper.GetFile(files[0], function (f) {
+                    var _Err = [];
+                    if (!(/\.pdf$/i).test(f.name)) _Err.push(describe + "只能上傳Pdf格式檔案");
+                    if (f.size / (1024 * 1024) > 10) _Err.push(describe + "檔案不能超過10MB");
+                    if (_Err.length > 0) {
+                        UiHelper.alert("<ul><li>" + _Err.join("</li><li>") + "</li>");
+                        return;
+                    }
+                    //me.IsShowUpLoadBtn = (_Err.length <= 0);
+                    att.HasFile = true;
+                    att.f = f;
+                });
+            },
+             /**
+             * 基本表單前端資料檢核
+             * @@param { any } Rec 主要申請資料表
+             * @@param { any } Att 相關附件
+             * @@returns { Array } 錯誤明細清單
+             */
+            FormCheck: function (Att) {
+                var self = this;
+                var errors = [];
+                Attachment = {};
+                if (!self.EditData.Aud_Sch_No) errors.push("尚未選擇『稽核編號』");
+                if (!self.EditData.PreDesc) errors.push("『案場排出允收稽核說明』未填寫");
+                if (!self.EditData.CleDesc) errors.push("『清除稽核說明』未填寫");
+                if (!self.EditData.OtherDesc) errors.push("『處理/境外處理/貯存稽核說明』未填寫");
+                if (!Att.AuditOperation.HasFile) errors.push("當未選擇『案場排出表稽核結果檔案』")
+                Attachment["@eItemType.AuditDoc.ToString()"] = Att.AuditOperation.f;
+
+                return errors;
+            },
+            Edit: function (item) {
+                var self = this;
+                self.Action = "From";
+                self.HadData = true;
+                self.$http.post({
+                    ApiDesc: "取得單一証明單",
+                    url: "@Url.Content("~/api/ProofSingle/GetDataEditing")",
+                    data: { ProofNo: item },
+                    success: function (result) {
+                        self.EditData = result;
+                        self.GetAudList(self.EditData.Aud_Sch_No);
+                    }
+                })
+            },
+            Add: function (item) {
+                var self = this;
+                self.Action = "From";
+                self.HadData = false;
+                self.EditData = item;
+                self.EditData.PsId = 0;
+                self.EditData.Month = 1;
+                self.GetAudList();
+                self.EditData.Aud_Sch_No = self.AudList[0];
+                self.EditData.UrlContent = "";
+                //self.AudSingle = self.AudList[0];
+                self.RoleList();
+            },
+            SaveAndView: function (att,print) {
+                var self = this;
+                var errors = self.FormCheck(att);
+                if (errors.length) {
+                    UiHelper.ClearMsg().ShowErr(errors, 6000);
+                    return;
+                }
+                if (print) {
+                    self.EditData.IsOutput = true;
+                    self.EditData.OutPutDate = '@DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")';
+                    self.EditData.Year = @DateTime.Now.ToString("yyyy");
+                } else {
+                    self.EditData.IsOutput = false;
+                    self.EditData.OutPutDate = null;
+                }
+
+                var SumbitData = {};
+                if (self.EditData.PsId > 0) {
+                    SumbitData = { Data: self.EditData, Attachment: Attachment, Action: "EDIT" };
+                } else {
+                    SumbitData = { Data: self.EditData, Attachment: Attachment, Action: "ADD" };
+                }
+                self.$http.post({
+                    ApiDesc: "新增儲存",
+                    url: "@Url.Content("~/api/ProofSingle/SaveProof")",
+                    data: SumbitData,
+                    success: function (data) {
+                        if (print)
+                            self.Back();
+                        self.HadData = true;
+                        self.ProofNo = data.ProofNo;
+                        self.Edit(data.ProofNo);
+                        document.getElementById("Aud_Sch_No").value = data.Aud_Sch_No;
+                        document.getElementById("ProofNo").value = data.ProofNo;
+                        document.getElementById("SendCode").submit();
+                    }
+                })
+            },
+            PrintView: function (att) {
+                var self = this;
+                var errors = self.FormCheck(att);
+                if (errors.length) {
+                    UiHelper.ClearMsg().ShowErr(errors, 6000);
+                    return;
+                }
+                if (self.EditData.PsId > 0) {
+                    self.$http.post({
+                        ApiDesc: "產出証明單",
+                        data: self.EditData,
+                        url: "@Url.Content("~/api/ProofSingle/ChangeProof")",
+                        success: function (data) {
+                            self.ProofNo = data.ProofNo;
+                            self.Edit(data.ProofNo);
+                            document.getElementById("Aud_Sch_No").value = data.Aud_Sch_No;
+                            document.getElementById("ProofNo").value = data.ProofNo;
+                            document.getElementById("SendCode").submit();
+                        }
+                    })
+
+                }
+            },
+            PrintPr: function (item) {
+                var self = this;
+                document.getElementById("Aud_Sch_No").value = item.Proof.Aud_Sch_No;
+                document.getElementById("ProofNo").value = item.Proof.ProofNo;
+                document.getElementById("SendCode").submit();
+            },
+            Delete: function (item) {
+                var self = this;
+                self.$http.post({
+                    ApiDesc: "刪除",
+                    data: { ProofNo: item.Proof.ProofNo },
+                    url: "@Url.Content("~/api/ProofSingle/DeleteProof")",
+                    success: function (item) {
+                        self.GoSub({ Uid:item });
+                    }
+                })
+            }
+        },
+        created: function () {
+            this.GetList();
+        }
+    });
+    </script>
+}

@@ -1,0 +1,73 @@
+﻿@page
+@using Microsoft.AspNetCore.Http
+@using System.Text.RegularExpressions
+@model NewsItemModel
+@{
+    var xi = Layout;
+    ViewData["Title"] = "最新消息";
+    string showURL(IHttpContextAccessor httpcontextaccessor)
+    {
+        var request = httpcontextaccessor.HttpContext.Request;
+
+        var absoluteUri = string.Concat(
+                    request.Scheme,
+                    "://",
+                    request.Host.ToUriComponent(),
+                    request.PathBase.ToUriComponent(),
+                    request.Path.ToUriComponent(),
+                    request.QueryString.ToUriComponent());
+        return absoluteUri;
+    }
+    string GetPath(IHttpContextAccessor httpcontextaccessor)
+    {
+        var request = httpcontextaccessor.HttpContext.Request;
+
+        var absoluteUri = string.Concat(
+                    request.Scheme,
+                    "://",
+                    request.Host.ToUriComponent(),
+                    request.PathBase.ToUriComponent());
+        return absoluteUri;
+    }
+    string url = showURL(Model._httpContextAccessor);
+    string urlpath = GetPath(Model._httpContextAccessor);
+}
+@section heads
+{
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="@(Model.News.Subject)" />
+    <meta property="og:description" content="@(Regex.Replace(Model.News.Body, "(?is)<.+?>", ""))" />
+    <meta property="og:image" content="@(urlpath)/img/banner.jpg" />
+    <meta property="og:url" content="@url" />
+}
+<div class="col" id="news">
+    <p class="text-end">
+        <i aria-hidden="true" class="fa fa-fw fa-calendar"></i>
+        @Html.DisplayNameFor(model => model.News.PostDt)：@Model.News.PostDt.yyyyMMdd()
+        @if (Model.News.IsHot)
+        {<i aria-hidden="true" class="fa fa-fw fa-tag text-primary"></i>}
+    </p>
+    <article class="jumbotron py-1">
+        <h3 class="title">
+            <span>
+                @Html.DisplayFor(model => model.News.Subject)
+            </span>
+
+        </h3>
+        <div class="pt-1">
+            @Html.Raw(Model.News.Body)
+        </div>
+        @if (Model.News.AttList.Any())
+        {
+            <div>
+                <span>相關附件</span>
+                <ul>
+                    @foreach (var item in Model.News.AttList)
+                    {
+                        <li><a href="@Url.Content(item.FilePath)" target="_parent">@item.OriginalFileName</a></li>
+                    }
+                </ul>
+            </div>
+        }
+    </article>
+</div>

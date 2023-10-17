@@ -1,0 +1,235 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor httpContext
+@{
+    var path = Context.Request.Path;
+    string url = string.Concat(
+                    Context.Request.Scheme,
+                    "://",
+                    Context.Request.Host.ToUriComponent(),
+                    Context.Request.PathBase.ToUriComponent(),
+                    Context.Request.Path.ToUriComponent(),
+                    Context.Request.QueryString.ToUriComponent());
+    string accesskey = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+}
+<!DOCTYPE html>
+<html lang="zh-hant">
+<head>
+    <title>@ViewData["Title"] | @SysConfig.Cfg.SiteName</title>
+    <meta charset="utf-8" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#e84">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="@SysConfig.Cfg.SiteName">
+    <meta name="keywords" content="太陽能,光電板">
+    <link rel="icon" href="~/img/favicon.png">
+    @*<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/figuration@3.0.5/dist/css/figuration.min.css">*@
+    <link async rel="stylesheet" href="~/css/figuration.min.css" />
+    @*<link async rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">*@
+    <link async href="~/lib/font-awesome/css/all.css" rel="stylesheet" />
+    <link async href="~/lib/font-awesome/css/v4-shims.css" rel="stylesheet" />
+    @*<link href="https://use.fontawesome.com/releases/v5.10.0/css/v4-shims.css" rel="stylesheet" />*@
+    <link rel="stylesheet" href="~/css/front.css" asp-append-version="true" />
+    @*<script src="//cdn.jsdelivr.net/combine/npm/jquery@3.5.1,npm/figuration@3.0.5"></script>*@
+    <script src="~/figuration/figuration.js"></script>
+    <script async src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
+    @*<link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />*@
+
+    <base href="@Url.Content("~/")" />
+    <style>
+        .dropdown-menu {
+            width: 300px !important;
+        }
+
+        * {
+            line-height: 1.5em;
+            letter-spacing: 0.14em;
+        }
+
+        p, strong {
+            margin: 0em 0em 2em 0em;
+        }
+
+        .myClass {
+            font-size: 1em;
+        }
+    </style>
+    @RenderSection("heads", required: false)
+
+
+
+
+</head>
+<body>
+
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg fixed-top" id="nav">
+            <div class="container">
+                <a href="@(accesskey)#AC" target="_top" class="sr-only sr-only-focusable">跳到主要內容</a>
+                <a href="@(accesskey)#U" id="AU" target="_top" name="U" accesskey="U" title="上方功能區塊" class="sr-only sr-only-focusable">:::</a>
+                <h1 class="logo">
+                    <a href="~/" class="navbar-brand me-0" title="廢太陽能光電板回收清除處理資訊系統">
+                        <img class="w-100 h-100" src="~/img/logo.png" alt="廢太陽能光電板回收清除處理資訊系統" asp-append-version="true" />
+
+                        <environment include="Development"><em>開發環境～</em></environment>
+                        <environment include="Staging"><em>測試網站～</em></environment>
+                    </a>
+                </h1>
+                <button class="navbar-toggle collapsed border-primary" type="button" data-cfw="collapse" data-cfw-collapse-target="#navbar">
+                    <span>≡</span>
+                </button>
+                <div class="navbar-collapse collapse navbars" id="navbar">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/"><i class="fa fa-lg fa-fw fa-home"></i>首頁</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="BackEnd" asp-page="/Login"><i class="fa fa-lg fa-fw fa-sign-in"></i>登入</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/SiteMap"><i class="fa fa-lg fa-fw fa-sitemap"></i>網站導覽</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://www.epa.gov.tw" target="_blank" rel="noopener noreferrer" title="另開新視窗"><i class="fa fa-lg fa-fw fa-external-link"></i>環保署</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" title="英文版" href="~/index_EN">EN</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" role="button" class="nav-link" data-cfw="dropdown">
+                                <i class="fas fa-search"></i>
+                                搜索
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <div id="search" class="dropdown">
+                                        <script async src="https://cse.google.com/cse.js?cx=670b620b6938598f9"></script>
+                                        <div class="gcse-search"></div>
+                                    </div>
+                                    <span class="nav-item" style="color: #1242ba">熱門關鍵字:</span> <br />
+                                    <a style="color: #1242ba" target="_blank" title="廢太陽光電板回收4步驟(另開視窗)" href="https://www.google.com/search?q=廢太陽光電板回收4步驟">廢太陽光電板回收4步驟</a>
+                                    <a style="color: #1242ba" target="_blank" title="排出登記(另開視窗)" href="https://www.google.com/search?q=排出登記">排出登記</a>
+                                </li>
+
+                            </ul>
+                        </li>
+
+                    </ul>
+
+                </div>
+
+            </div>
+        </nav>
+    </header>
+    <div id="content">
+
+        <main role="main" aria-label="main section">
+            <noscript>
+                <div class="h1">此網頁需要支援 JavaScript 才能正確運行，請先至你的瀏覽器設定中開啟 JavaScript。</div>
+            </noscript>
+            <a href="@(accesskey)#C" target="_top" id="AC" name="C" accesskey="C" title="中間內容區塊" class="sr-only sr-only-focusable">:::</a>
+            @if (path == "/" || path == "")
+            {
+                @RenderBody()
+            }
+            else
+            {
+                <div id="main" class="container pt-2">
+                    <div id="bread" class="row">
+                        <nav aria-label="breadcrumb col-4" role="navigation">
+                            <ol class="breadcrumb py-0_25 mb-0_5">
+                                <li class="breadcrumb-item">現在位置： <a href="~/">首頁</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+                            </ol>
+                        </nav>
+                        <div class="text-end offset-4 col">
+                            <a href="https://social-plugins.line.me/lineit/share?url=@url" style="text-decoration:none;" target="_blank" aria-label="Line分享(另開新頁)" title="Line分享(另開新頁)"><i aria-label="Line分享(另開新頁)" title="Line分享(另開新頁)" class="fab fa-line fa-2x" style="color:#82c91e;"></i> &nbsp;</a>
+                            <a href="https://www.facebook.com/sharer.php?u=@url" style="text-decoration:none;" target="_blank" aria-label="FackBook分享(另開新頁)" title="FackBook分享(另開新頁)"><i aria-label="FackBook分享(另開新頁)" title="FackBook分享(另開新頁)" class="fab fa-facebook-square fa-2x"></i>&nbsp;</a>
+                            <a href="https://twitter.com/share?url=@url" style="text-decoration:none;" target="_blank" aria-label="Twitter分享(另開新頁)" title="Twitter分享(另開新頁)"><i aria-label="Twitter分享(另開新頁)" title="Twitter分享(另開新頁)" class="fab fa-twitter fa-2x" style="color:#00acee"></i>&nbsp;</a>
+                            <a href="#" onclick="window.print()" target="_blank" style="text-decoration:none;" aria-label="友善列印" title="友善列印"><i aria-label="友善列印" title="友善列印" class="fas fa-print fa-2x"></i>&nbsp;</a>
+                        </div>
+                    </div>
+                    <h2 id="breadtittle" class="title">
+                        <span><i aria-hidden="true" class="fa fa-pencil"></i>@ViewData["Title"]</span>
+                    </h2>
+
+                    @RenderBody()
+                </div>
+            }
+        </main>
+    </div>
+    <footer class="bg-faded pb-1">
+        <div class="container">
+            <a href="@(accesskey)#B" id="AB" target="_top" name="B" accesskey="B" title="下方功能區塊" class="sr-only sr-only-focusable">:::</a>
+            <div class="row">
+                <div class="col-md-5 mt-1">
+                    <span class="title h4"><span>版權所有</span></span>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-copyright"></i><strong>版權所有︰</strong>行政院環境保護署</p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-map-marker"></i><strong>地址：</strong>100006臺北市中正區中華路一段83號</p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-phone"></i><strong>聯絡電話：</strong>@SysConfig.Cfg.ContactPhone <br /></p>
+
+                    <p><i aria-hidden="true" class="fa fa-fw fa-envelope"></i><a target="_blank" title="另開新視窗" rel="noopener noreferrer" href="https://epamail.epa.gov.tw/front/mailboxhome">首長信箱</a></p>
+
+                </div>
+                <div class="col-md-5 mt-1">
+                    <span class="title h4"><span>關於本站</span></span>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-list"></i><a target="_blank" title="另開新視窗" rel="noopener noreferrer" href="https://www.epa.gov.tw/Page/70E67DE2079DF931">隱私權及資訊安全宣告</a></p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-info"></i><a target="_blank" title="另開新視窗" rel="noopener noreferrer" href="https://www.epa.gov.tw/Page/A33D3A6556ABFCD2">網站資料開放宣告</a></p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-phone"></i><strong>諮詢電話：</strong>@SysConfig.Cfg.SupportPhone</p>
+                    <p><i class="fa fa-fw fa-clock"></i><strong>諮詢時間：</strong> 09:00-17:00</p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-envelope"></i><a href="~/ContactUs">諮詢信箱</a></p>
+                    <p><i aria-hidden="true" class="fa fa-fw fa-calendar"></i><strong>網頁更新日期：</strong>@SysConfig.Cfg.UpdateDt.ToString("yyyy-MM-dd")</p>
+                </div>
+                <div class="col-md-2 mt-1">
+                    <a href="https://accessibility.ncc.gov.tw/Applications/Detail?category=20210827172710" title="無障礙網站">
+                        <img src="~/img/Accessibllity.jpg" border="0" width="150" height="53" alt="通過AA檢測等級無障礙網頁檢測" />
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+
+    <!-- Google Analytics -->
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-151343133-1', 'epa.gov.tw');
+        ga('send', 'pageview');
+    </script>
+    <!-- End Google Analytics -->
+    @*使用PageShow事件去除CSE的CSS新增規則*@
+    @if (Context.Request.Path.Value.ToLower() == "/info/step" || Context.Request.Path.Value.ToLower() == "/accountappvue")
+    {
+        <script>
+            $(function () {
+                $(window).on('pageshow', function () {
+                    //$("head style")[3].remove();
+                    //console.log($("head style")[3]);
+                    $("td").removeAttr("id");
+                });
+            })
+        </script>
+    }
+    else
+    {
+        <script>
+            $(function () {
+                $(window).on('pageshow', function () {
+                    //$("head style")[2].remove();
+                    //console.log($("head style")[2]);
+                    $("td").removeAttr("id");
+                });
+
+            })
+        </script>
+    }
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,739 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.ScrapBookingVue
+@{
+    ViewData["Title"] = "案場排出登記表";
+}
+
+<div id="app" v-cloak>
+    <div class="form-inline inline-box">
+        <label for="keyword" class="control-label">關鍵字查詢</label>
+        <input type="text" class="form-control" id="keyword" v-model="Qry.KeyWord" />
+        <label class="control-label ml-4">使用狀態:</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="1" />填寫中</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="S" />提出申請</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="M" />待補正</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="N" />不通過</label>
+        <label><input type="radio" v-model.number="Qry.Status" value="Y1" />通過</label>
+        <div class="m-auto"></div>
+        <input type="button" value="搜尋" @@click="GetList(Qry)" class="btn btn-outline-success" />
+        <input type="button" value="新增資料" @@click="Edit()" class="btn btn-outline-primary" />
+    </div>
+    <div class="table-responsive-md">
+        <table class="table table-hover text-center">
+            <thead>
+                <tr>
+                    <th>申請編號</th>
+                    <th>聯絡人</th>
+                    <th>聯絡電話</th>
+                    <th>數量</th>
+                    <th>狀態</th>
+                    <th class="w-13">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item,index) in RecList.slice(pageStart, pageStart + countOfPage)">
+                    <td>{{item.Bookingno}}</td>
+                    <td>{{item.Contact}}</td>
+                    <td>{{item.Tel}}</td>
+                    <td>{{item.Qty}}</td>
+                    <td>{{GetStatus(item.Status)}}</td>
+                    <td>
+                        <input type="button" class="btn btn-outline-dark" value="檢視" @@click="View(item);" />
+                        <input type="button" class="btn btn-outline-primary" value="編輯" @@click="Edit(item,index+pageStart);" v-if="item.Status == '1' || item.Status ==  'M'" />
+                        <input type="button" class="btn btn-outline-warning" value="刪除" @@click="Delete(index+pageStart);" tabindex="-1" v-if="item.Status == '1'" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div><!-- 查詢結果 -->
+    <div class="text-right">
+        <partial name="_PagerRecListPartial" />
+    </div><!-- 分頁控制 -->
+    <div id="ModifyDialog" class="modal fade text-left" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[編輯]<span v-if="Rec.Pid > 0"> {{Rec.Bookingno}}</span></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label for="Contact" class="col-md-3 col-form-label">聯絡人</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="Rec.Contact" maxlength="250" id="Contact" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="Tel" class="col-md-3 col-form-label">聯絡電話</label>
+                        <div class="col-md-9">
+                            <input type="tel" class="form-control" v-model="Rec.Tel" maxlength="250" id="Tel" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="Email" class="col-md-3 col-form-label">E-mail</label>
+                        <div class="col-md-9">
+                            <input type="email" class="form-control" v-model="Rec.Email" maxlength="250" id="Email" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <!--型態(地址1,地號2)-->
+                        <label for="Uspid" class="col-md-3 col-form-label">存放地點</label>
+                        <div class="col-md-9">
+                            <select class="form-control" v-model="Rec.Uspid" id="Uspid">
+                                <option value="0">請選擇</option>
+                                <option v-for="option in UspidOptions" :value="option.Pid">{{option.Storeaddr}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3">
+
+                        </div>
+                        <div class="col-md-9">
+                            <label for="Contract" class="col-md-12 col-form-label">
+                                <input type="checkbox" class="form-check-input" v-model="Rec.Contract" id="Contract" />
+                                屬於拆除相關工程或具備拆除工程相關合約
+                            </label>
+
+                        </div>
+                    </div>
+                    <table class="table table-sm table-bordered">
+                        <tbody>
+                            <tr class="text-center" style="background-color:antiquewhite;">
+                                <th><label for="searchpv">太陽光電板序號</label></th>
+                                <th class="w-5">新增</th>
+                            </tr>
+                            <tr>
+                                <td>
+                                    
+                                    <input type="text" v-model="SpSearch" @@input="SearchSp" class="form-control form-control-sm ml-10" id="searchpv" placeholder="搜尋">
+
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <select multiple class="form-control form-control-sm" v-model="Rec2">
+                                        <option v-for="option in SpSelect" :value="option">{{option.Sno}}</option>
+                                    </select>
+                                </td>
+                                <td class="text-center"><input type="button" class="btn btn-sm btn-info" @@click="AddSp()" value="新增" /><br />按住Ctrl或Shift可多選</td>
+                            </tr>
+                            <tr v-for="(item,index) in Rec.SP" style="background-color:lightcyan">
+                                <td class="text-right">{{ShowSno(item.Pid)}}</td>
+                                <td class="text-center"><input type="button" class="btn btn-sm btn-warning" value="移除" @@click="RemoveSp(index)" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+
+                    <div class="form-group row">
+                        <div class="col-md-12">
+
+                            <a href="~/pubFile/PV案場排出切結書_委託授權書110_0628.odt">案場排出切結書及授權委託書範本下載</a>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-5">
+                            <div class="col-md-12">
+                                <label for="ScrapBookingDoc">案場排出切結書及授權委託書上傳</label>                                
+                                <div class="col-md-12" v-if="AttList && AttList.length > 0 ">
+                                    <ul class="m-0 p-0">
+                                        <li v-for="(item,index) in AttList">
+                                            <a :href="item.url" target="_blank">{{item.OriginalFileName}}</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+                            
+                            <input type="file" accept=".pdf" class="form-control-file" id="ScrapBookingDoc" @@change="FileUpLoadChange($event,Attached.ScrapBookingDoc,'案場排出登記表附件')" />
+                        </div>
+                    </div>
+                    <div class="form-group row" v-if="Rec.Status == '1' || Rec.Status == 'M'">
+                        <div class="col-md-12">
+                            <label>
+                                <input type="radio" v-model="ApplySent.Known" value="1" />已閱讀並同意
+                                <a href="~/pubFile/案場應遵行事項_1100323.odt">案場應遵行事項(110.03.23版)</a>及以下清運須知規定，並能配合執行：
+                            </label>
+                            <ul>
+                                <li>清運前：排出者應自行拆卸廢太陽能板並整齊堆放於棧板上。</li>
+                                <li>
+                                    清運時：
+                                    <ul>
+                                        <li>排出者應自行搬運廢太陽能板。（建議搬運工具如：堆高機、吊車、油壓式拖板車或其他可裝載至清除車輛等工具）</li>
+                                        <li>排出者應配合清運業者確認清運數量。</li>
+                                        <li>清運業者到場清運時，應與排出者共同確認廢太陽能板數量與重量是否與登記申報內容一致。</li>
+                                    </ul>
+                                </li>
+                                @*<li>清運業者到場清運時，應與排出者共同確認廢太陽能板完整性是否與登記申報內容一致，以及是否符合允收標準。未符合允收標準之廢太陽能板，應記錄其數量及重量。</li>
+                                    <li>廢太陽能板不符合允收標準，排出者應依公告處理費率，付處理費用。</li>*@
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @@click="Save(Rec,Attached);">存檔</button>
+                        <button type="button" class="btn btn-primary" @@click="Apply(Rec,ApplySent);" v-if="Rec.Pid">提出申請</button>
+                        <button type="button" class="btn btn-warning" data-dismiss="modal">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- 編輯框 -->
+    <div id="ViewDialog" class="modal fade text-left" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">[檢視]{{RecV.Bookingno}}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a data-toggle="tab" href="#sb1" role="tab" class="nav-item nav-link active">基本資料</a>
+                        <a data-toggle="tab" href="#sb2" role="tab" class="nav-item nav-link">太陽光電板設備</a>
+                        <a data-toggle="tab" href="#sb3" role="tab" class="nav-item nav-link" v-if="ReviewList.length > 0">確認資料</a>
+                    </div>
+                    <div class="tab-content tab-content-border" style="height: 640px; overflow-y: auto">
+                        <div id="sb1" role="tabpanel" class="tab-pane active">
+                            <dl class="row">
+                                <dt class="col-sm-4">聯絡人</dt>
+                                <dd class="col-sm-8">{{RecV.Contact}}</dd>
+                                <dt class="col-sm-4">聯絡電話</dt>
+                                <dd class="col-sm-8">{{RecV.Tel}}</dd>
+                                <dt class="col-sm-4">E-mail</dt>
+                                <dd class="col-sm-8">{{RecV.Email}}</dd>
+                                <dt class="col-sm-4">屬於拆除相關工程或具備拆除工程相關合約</dt>
+                                <dd class="col-sm-8">{{RecV.Contract ? '是' : '否'}}</dd>
+                                <template v-if="RecV.USAddr && RecV.USAddr.length > 0">
+                                    <dt class="col-sm-4">存放地點</dt>
+                                    <dd class="col-sm-8" v-for="(item,index) in RecV.USAddr">{{item.Storeaddr}}</dd>
+                                </template>
+                                <template v-if="RecV.Qty > 0">
+                                    <dt class="col-sm-4">申請總數量(片)</dt>
+                                    <dd class="col-sm-8">{{RecV.Qty}}</dd>
+                                </template>
+                                <template v-if="AttList.length > 0">
+                                    <dt class="col-sm-4">案場排出切結書及授權委託書</dt>
+                                    <dd class="col-sm-8">
+                                        <ul class="m-0 p-0">
+                                            <li v-for="f in AttList">
+                                                <a :href="f.url" target="_blank">{{f.OriginalFileName}}</a>
+                                            </li>
+                                        </ul>
+                                    </dd>
+                                </template>
+                            </dl>
+                        </div>
+
+                        <div id="sb2" role="tabpanel" class="tab-pane">
+                            <div v-for="pv in RecV.PV">
+                                <dl class="row bg-hover">
+                                    <dt class="col-sm-4">設備登記編號</dt>
+                                    <dd class="col-sm-8">{{pv.Pvno}}</dd>
+                                    <template v-if="pv.FileAgreement.length > 0">
+                                        <dt class="col-sm-4">設備登記同意函</dt>
+                                        <dd class="col-sm-8">
+                                            <ul class="m-0 p-0">
+                                                <li v-for="f in pv.FileAgreement">
+                                                    <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                                </li>
+                                            </ul>
+                                        </dd>
+                                    </template>
+                                    <template v-if="pv.FileApplyDoc.length > 0">
+                                        <dt class="col-sm-4">設備登記申請表</dt>
+                                        <dd class="col-sm-8">
+                                            <ul class="m-0 p-0">
+                                                <li v-for="f in pv.FileApplyDoc">
+                                                    <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                                </li>
+                                            </ul>
+                                        </dd>
+                                    </template>
+                                    <template v-if="pv.FileProvDoc.length > 0">
+                                        <dt class="col-sm-4">裝置容量證明文件-產品型錄</dt>
+                                        <dd class="col-sm-8">
+                                            <ul class="m-0 p-0">
+                                                <li v-for="f in pv.FileProvDoc">
+                                                    <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                                </li>
+                                            </ul>
+                                        </dd>
+                                    </template>
+                                    <template v-if="pv.FilePvSnDoc.length > 0">
+                                        <dt class="col-sm-4">裝置容量證明文件-太陽光電模組序號</dt>
+                                        <dd class="col-sm-8">
+                                            <ul class="m-0 p-0">
+                                                <li v-for="f in pv.FilePvSnDoc">
+                                                    <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                                </li>
+                                            </ul>
+                                        </dd>
+                                    </template>
+                                    <dt class="col-sm-4">設備數量(片)</dt>
+                                    <dd class="col-sm-8">{{pv.SpQty}}</dd>
+                                    <dt class="col-sm-4">先前已審查確認數量(片)</dt>
+                                    <dd class="col-sm-8">{{pv.ReviewQty}}</dd>
+                                    <dt class="col-sm-4">系統已建置數量(片)</dt>
+                                    <dd class="col-sm-8">{{pv.TotalPvCount}}</dd>
+                                    <dt class="col-sm-4">本次申請量(片)</dt>
+                                    <dd class="col-sm-8">{{pv.SP.length}}</dd>
+                                    <dd class="col-12 m-0">
+                                        <div class="card" v-for="sp in pv.SP">
+                                            <div class="card-header py-1">
+                                                <a data-toggle="collapse" :href="'#vsp' + sp.Sno">
+                                                    太陽光電板序號 {{sp.Sno}}
+                                                </a>
+                                            </div>
+                                            <div class="collapse" :id="'vsp' + sp.Sno">
+                                                <div class="card-body">
+                                                    <dl class="row mb-0">
+                                                        <dt class="col-sm-4">有無太陽光電板序號</dt>
+                                                        <dd class="col-sm-8">{{sp.Hasno == 1 ? '有' : '無'}}序號</dd>
+                                                        <dt class="col-sm-4">模組廠牌</dt>
+                                                        <dd class="col-sm-8">{{sp.Brand}}</dd>
+                                                        <dt class="col-sm-4">模組型號</dt>
+                                                        <dd class="col-sm-8">{{sp.Module}}</dd>
+                                                        <dt class="col-sm-4">模組樣態</dt>
+                                                        <dd class="col-sm-8">{{GetStyle(sp.Style)}}</dd>
+                                                        <dt class="col-sm-4" v-if="sp.Style == 9">樣態說明</dt>
+                                                        <dd class="col-sm-8" v-if="sp.Style == 9">{{sp.StyleDesc}}</dd>
+                                                        <dt class="col-sm-4" v-if="sp.Spweight">重量(KG)</dt>
+                                                        <dd class="col-sm-8" v-if="sp.Spweight">{{sp.Spweight}}</dd>
+                                                        <dt class="col-sm-4">外觀鋁框完整度</dt>
+                                                        <dd class="col-sm-8">{{sp.AlFrame == 1 ? '有' : '無'}}鋁框</dd>
+                                                        <dt class="col-sm-4" v-if="sp.Memo">備註</dt>
+                                                        <dd class="col-sm-8" v-if="sp.Memo">{{sp.Memo}}</dd>
+                                                        <dt class="col-sm-4" v-if="sp.File.length > 0">附件</dt>
+                                                        <dd class="col-sm-8" v-if="sp.File.length > 0">
+                                                            <ul class="m-0 p-0">
+                                                                <li v-for="f in sp.File">
+                                                                    <a :href="urlContent(f.FilePath)" target="_blank">{{f.OriginalFileName}}</a>
+                                                                </li>
+                                                            </ul>
+                                                        </dd>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </dd>
+                                </dl>
+                                <hr>
+                            </div>
+                        </div>
+
+                        <div id="sb3" role="tabpanel" class="tab-pane" v-if="ReviewList.length > 0">
+                            <table class="table table-sm table-bordered">
+                                <tr class="text-center bg-gray-200">
+                                    <th class="w-7">確認者</th>
+                                    <th class="w-7">確認日期</th>
+                                    <th>確認意見</th>
+                                </tr>
+                                <tr v-for="r in ReviewList">
+                                    <td>{{r.CKName}}</td>
+                                    <td>{{r.CKDate | formatDate}}</td>
+                                    <td>
+                                        <div v-if="r.Status == 'Y1'">
+                                            通過
+                                        </div>
+                                        <div v-if="r.Status == 'M' || r.Status == 'N'">
+                                            {{r.Status == 'M' ? '補正' : '不通過'}}，
+                                            {{r.Desc}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- 檢視框 -->
+</div>
+
+@section Scripts{
+    <script src="~/js/MixinPagerRecList.js"></script>
+    <environment include="Development">
+        <script>
+            Vue.config.devtools = true
+        </script>
+    </environment>
+    <script>
+        function removeItemOnce(arr, value) {
+            var index = arr.indexOf(value);
+            if (index > -1) {
+                arr.splice(index, 1);
+            }
+            return arr;
+        }
+var app = new Vue({
+    el: '#app',
+    mixins: [MixinPagerRecList],
+    data: {
+        RecList: [],
+        AttList: [],
+        Attached: {
+            ScrapBookingDoc: { HasFile: false }
+        },
+        UspidOptions: [],
+        SpOptions: [],
+        SpSelect:[],
+        UserInfo:[],
+        Rec: {},
+        Rec2: [],
+        RecV: {},
+        Qry: {},
+        ApplySent: {},
+        FlatPickrCfg: {
+            altInput: false,
+            allowInput: true,
+            minuteIncrement: 10
+        },
+        ReviewList: [],
+        SpSearch:""
+    },
+    methods: {
+        RemoveSp: function (index) {
+            var self = this;
+            self.SpSelect.push(self.Rec.SP[index]);
+            self.Rec.SP.splice(index, 1)
+        },
+        AddSp: function () {
+            var self = this;
+            var deletedata = [];
+            for (var i = 0; i < self.Rec2.length; i++) {
+                self.Rec.SP.push(self.Rec2[i]);
+                self.SpSelect = removeItemOnce(self.SpSelect,self.Rec2[i]);
+            }
+            //self.Rec2.forEach(e => { self.Rec.SP.push(e); self.Rec2 = removeItemOnce(self.Rec2, e); });
+
+        },
+        GetUspidOptions: function () {
+            var me = this;
+            this.$http.post({
+                ApiDesc: "取得貯存地點",
+                url: "@Url.Content("~/api/ScrapBooking/GetUspidOptions")",
+                data: {},
+                success: function (_Result) {
+                    me.UspidOptions = _Result;
+                    return;
+                 }
+            });
+        },
+        GetUserInfo: function () {
+            var me = this;
+            this.$http.post({
+                ApiDesc: "取得User資訊",
+                url: "@Url.Content("~/api/ScrapBooking/GetUserInfo")",
+                data: {},
+                success: function (_Result) {
+                    me.UserInfo = _Result;
+                    return;
+                }
+            });
+        },
+        GetSpOptions: function () {
+            var me = this;
+            this.$http.post({
+                ApiDesc: "取得太陽光電板序號",
+                url: "@Url.Content("~/api/ScrapBooking/GetSpOptions")",
+                data: {},
+                success: function (_Result) {
+                    me.SpOptions = _Result;
+                    me.SpSelect = _Result.filter(function (item) {
+                        return (!item.Sbid) && item.Pvid
+                    });
+                    return;
+                }
+            });
+        },
+
+        /**
+         * 狀態
+         * @@param {string} Dat 狀態代碼
+         */
+        GetStatus: function (Dat) {
+            if (!Dat) return;
+            var _Status = '';
+            if (Dat == "1") _Status = '填寫中';
+            if (Dat == "S") _Status = '提出申請';
+            if (Dat == "M") _Status = '待補正';
+            if (Dat == "N") _Status = '審核不通過';
+            if (Dat == "Y1") _Status = '通過';
+            return _Status;
+        },
+
+        /**
+         * 樣態
+         * @@param {string} Dat 樣態代碼
+         */
+        GetStyle: function (Dat) {
+            if (!Dat) return;
+            var _Status = '';
+            if (Dat == "1") _Status = '矽晶單片玻璃';
+            if (Dat == "2") _Status = '矽晶雙片玻璃';
+            if (Dat == "3") _Status = '薄膜型';
+            if (Dat == "9") _Status = '其他';
+            return _Status;
+        },
+        /**
+         * 位址轉換
+         * @@param {string} path 相對位址
+         * @@returns { string } 絕對位址
+         */
+        urlContent: function (path) {
+            var root = '@Url.Content("~/")';
+            return path.replace('~/', root);
+        },
+        View: function (item) {
+            var me = this;
+            me.Rec = item;
+            me.$http.post({
+                ApiDesc: '單筆資料載入',
+                url: '@Url.Action("View", "ScrapBooking")',
+                data: {
+                    Pid : item.Pid
+                } ,
+                success: function (result) {
+                    me.RecV = result.Rec;
+                    me.AttList = result.AttList;
+                    me.ReviewList = result.ReviewList;
+                    $('#ViewDialog').modal('show');
+                    $('#nav-tab a:eq(0)').tab('show');
+                }
+            });
+        },
+        GetList: function (Qry) {
+            Qry.Mode = "Apply";
+            Qry.KeyWord = "@ViewData["BNO"]";
+            var me = this;
+            me.$http.post({
+                ApiDesc: '資料查詢',
+                url: '@Url.Action("GetList", "ScrapBooking")',
+                data: Qry,
+                success: function (result) {
+                    me.RecList = result;
+                }
+            });
+        },
+        Edit: function (item, index) {
+            var me = this;
+            me.AttList = [];
+            this.GetSpOptions();
+            me.Rec = item || {
+                Uid: "0",
+                Appdate: "2019-8-8",
+                Contact: this.UserInfo.Contact,
+                Tel: this.UserInfo.Tel,
+                Email: this.UserInfo.Email,
+                Uspid: "0",
+                Status: "1",
+                Bookingno: "0000000000",
+                Qty : "0",
+                SP: [],
+                AttList: []
+
+            };
+
+            $('#ModifyDialog').modal("show");
+            if (!this.Rec.Pid) return;
+            this.$http.post({
+                ApiDesc: "單筆資料載入",
+                url: "@Url.Content("~/api/ScrapBooking/GetItem")",
+                data: {
+                    Pid: this.Rec.Pid
+                },
+                success: function (_Result) {
+                    me.Rec = _Result.Rec;
+                    me.Rec.EditIndex = index;
+                    me.AttList = _Result.AttList;
+                }
+            });
+        },
+        Delete: function (index) {
+            var me = this;
+            UiHelper.confirm("確定要刪除這筆資料!?", function () {
+                me.$http.post({
+                    ApiDesc: "資料刪除",
+                    url: "@Url.Content("~/api/ScrapBooking/Delete")",
+                    data: me.RecList[index],
+                    success: function (_Result) {
+                        UiHelper.ShowMsg("資料已刪除。");
+                        me.RecList.splice(index, 1);
+                    }
+                });
+            });
+        },
+        FileUpLoadChange: function (e, att, describe) {
+            var me = this;
+            att.HasFile = false;
+            delete att.f;
+            var files = e.target.files || e.dataTransfer.files;
+            if (!files.length) return;
+            UiHelper.GetFile(files[0], function (f) {
+                var _Err = [];
+                if (!(/\.pdf$/i).test(f.name)) _Err.push(describe + "只能上傳Pdf格式檔案");
+                if (f.size / (1024 * 1024) > 10) _Err.push(describe + "檔案不能超過10MB");
+                if (_Err.length > 0) {
+                    UiHelper.alert("<ul><li>" + _Err.join("</li><li>") + "</li>");
+                    return;
+                }
+                me.IsShowUpLoadBtn = (_Err.length <= 0);
+                att.HasFile = true;
+                att.f = f;
+            });
+        },
+
+        /**
+         * 基本表單前端資料檢核
+         * @@param { any } Rec 主要申請資料表
+         * @@param { any } Att 相關附件
+         * @@returns { Array } 錯誤明細清單
+         */
+        FormCheck: function (Rec, Att) {
+            var errors = [];
+            Attachment = {};
+
+            if (Rec.SP.length == 0) errors.push("『太陽光電板序號』未填寫");
+            if (Rec.Contact =='') errors.push("『聯絡人』未填寫");
+            if (Rec.Tel.length =='') errors.push("『聯絡電話』未填寫");
+            if (Rec.Email.length =='') errors.push("『Email』未填寫");
+            if (Rec.Uspid =='0') errors.push("『存放地點』未填寫");
+            Attachment["@eItemType.None.ToString()"] = Att.ScrapBookingDoc.f;
+
+            return errors;
+        },
+        /**
+         * 案件送出
+         * @@param { any } Rec 主要申請資料表
+         * @@param { any } Att 相關附件
+         */
+        Save: function (Rec, Att) {
+            var me = this;
+            me.Rec.Qty = Rec.SP.length;
+            var errors = me.FormCheck(Rec, Att);
+
+            if (errors.length) {
+                UiHelper.ClearMsg().ShowErr(errors, 6000);
+                return;
+            }
+            RecAll = { 'Rec': Rec, 'Attachment': Attachment }
+            this.$http.post({
+                ApiDesc: "資料存檔",
+                url: "@Url.Content("~/api/ScrapBooking/Save")",
+                data: RecAll,
+                success: function (_Result) {
+                    if (me.Rec.hasOwnProperty('EditIndex')) {
+
+                        me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                    } else {
+                        me.RecList.unshift(_Result.Rec);
+                    }
+                    me.GetSpOptions();
+                    me.$forceUpdate();
+                    $('#ModifyDialog').modal("hide");
+                }
+            });
+        },
+        Apply: function (Rec, ApplySent) {
+            var me = this;
+            var errors = [];
+            Attachment = {};
+
+            if (ApplySent.Known != "1")
+            {
+                errors.push("請閱讀並同意清運須知規定，並能配合執行,點選後送出申請");
+                UiHelper.ClearMsg().ShowErr(errors, 6000);
+                return;
+            }
+
+            me.Rec.Qty = Rec.SP.length;
+            me.Rec.Status = "S";
+
+            RecAll = { 'Rec': Rec, 'Attachment': Attachment }
+            this.$http.post({
+                ApiDesc: "資料送出申請",
+                url: "@Url.Content("~/api/ScrapBooking/Save")",
+                data: RecAll,
+                success: function (_Result) {
+                    if (me.Rec.hasOwnProperty('EditIndex')) {
+
+                        me.RecList[me.Rec.EditIndex] = _Result.Rec;
+                    } else {
+                        me.RecList.unshift(_Result.Rec);
+                    }
+                    me.$forceUpdate();
+                    $('#ModifyDialog').modal("hide");
+                }
+            });
+        },
+        /**
+         * 顯示Sno
+         * @@param {string} Dat 流水號
+         */
+        ShowSno: function (Dat) {
+            if (!Dat) return;
+            var _Sno = '';
+            this.SpOptions.map(function (item) {
+                if (Dat == item.Pid) _Sno = item.Sno;
+            });
+            return _Sno;
+        },
+        addList: function (_rec,_rec2) {
+
+            var me = this;
+            if (_rec.SP == null) {
+                _rec.SP = _rec2;
+            }
+            _rec.SP.push({
+                Sno: _rec2.Sno,
+                AlFrame: _rec2.AlFrame,
+                Memo: _rec2.Memo
+            });
+            _rec2.Sno = '';
+            _rec2.AlFrame = '';
+            _rec2.Memo = '';
+        },
+
+        RemoveItem : function (_index, _RawData) {
+            _RawData.SP.splice(_index, 1);
+        },
+        SearchSp: function () {
+            var self = this;
+            if (self.SpSearch) {
+                self.SpSelect = self.SpOptions.filter(function (item) {
+                    var result = !(Have(self.Rec.SP, item.Sno));
+                    var result2 = (!item.Sbid && item.Pvid) && item.Sno.toUpperCase().startsWith(self.SpSearch.toUpperCase())
+                    return result2 && result;
+                })
+            } else {
+                self.SpSelect = self.SpOptions.filter(function (item) {
+                    var result = !(Have(self.Rec.SP, item.Sno));
+                    var result2 = (!item.Sbid && item.Pvid);
+                    return result2 && result;
+                })
+            }
+
+        }
+    },
+    created: function () {
+        this.GetList(this.Qry);
+        this.GetUserInfo();
+        this.GetUspidOptions();
+        this.GetSpOptions();
+    }
+});
+        function Have(arr, carr) {
+            var haveitem = false;
+            arr.forEach(e => {
+                if (e.Sno == carr) {
+                    haveitem = true;
+                }
+            })
+            return haveitem;
+        }
+    </script>
+}

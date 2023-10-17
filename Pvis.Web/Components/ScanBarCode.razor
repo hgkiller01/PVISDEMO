@@ -1,0 +1,33 @@
+﻿<button class="btn btn-lg btn-warning" id="ScanIt"
+        @onclick="(() => ShowScanBarcode = !ShowScanBarcode)">
+    掃碼
+</button>
+<ul>
+    @foreach (var item in BarCodes)
+    {
+        <li>@item</li>
+    }
+
+</ul>
+@if (ShowScanBarcode)
+{
+    <BarcodeReader ScanResult="(e) => Scan(e)"
+                   ShowScanBarcode="ShowScanBarcode" Close="() => ShowScanBarcode = !ShowScanBarcode"></BarcodeReader>
+}
+<h3>@NowPage</h3> 
+<Pagination TotalCount="132" PageSize="10" ChangeResult="(e) => GetPage(e)"></Pagination>
+@code {
+    bool ShowScanBarcode { get; set; } = false;
+    public string BarCode { get; set; }
+    public List<string> BarCodes { get; set; } = new List<string>();
+    public int NowPage { get; set; } = 1;
+    public void Scan(string e)
+    {
+        ShowScanBarcode = !ShowScanBarcode;
+        BarCodes.Add(e);
+    }
+    public void GetPage(int page)
+    {
+        NowPage = page;
+    }
+}

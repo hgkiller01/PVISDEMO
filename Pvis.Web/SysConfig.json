@@ -1,0 +1,20 @@
+{
+  "MailBcc": [
+    "hgkiller@eri.com.tw"
+  ],
+  "ContactUsEmail": [],
+  "ReviewCcEmail": [],
+  "SiteName": "廢太陽光電板回收服務管理資訊系統",
+  "ContactPhone": "(02)2311-7722",
+  "SupportPhone": "(03)582-0009",
+  "UpdateDt": "2019-10-22T00:00:00",
+  "Sender": "hgkiller@eri.com.tw",
+  "StmpServer": {
+    "MailServer": "MailGW.eri.com.tw",
+    "MailPort": 25,
+    "SenderName": "測試-PVIS系統通知信",
+    "Sender": "hgkiller@eri.com.tw",
+    "Password": "",
+    "UseSSL": false
+  }
+}

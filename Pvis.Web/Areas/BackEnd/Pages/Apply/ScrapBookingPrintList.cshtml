@@ -1,0 +1,471 @@
+﻿@page
+@model Pvis.Web.Areas.BackEnd.Pages.Apply.ScrapBookingPrintListModel
+@{
+    ViewData["Title"] = "案場排出表";
+    Layout = null;
+}
+
+<link rel="stylesheet" href="~/lib/sbadmin2/css/sb-admin-2.min.css">
+<link rel="stylesheet" href="~/css/backend.css" asp-append-version="true">
+
+<style type="text/css">
+    .top caption {
+        caption-side: top;
+        text-align: center
+    }
+
+    table {
+        color: #353538;
+    }
+
+    .table-bordered td, .table-bordered th {
+        border: 1px solid #808080 !important
+    }
+
+    .disabled {
+        background-color: #ececec;
+        vertical-align: middle !important;
+    }
+
+    /*  畫斜線,但列印時無效
+    .disabled2 {
+        background-image: linear-gradient( to top left, white 48%, black, white 52% );
+    }
+    */
+
+    #t01_1_table td, th {
+        line-height: 1.1;
+        border: 1px solid #808080 !important;
+        padding: 0 .75rem 0 .75rem;
+    }
+
+    #t01_desc td, th {
+        line-height: 1.25;
+        border: 1px solid #808080 !important;
+        padding: 0 .75rem 0 .75rem;
+    }
+
+    #hide_border {
+        border: none !important;
+    }
+
+    #table-sign {
+        border-bottom: double;
+        width: 100%;
+        border-color: #808080;
+        color: #808080;
+    }
+
+        #table-sign td {
+            padding-bottom: .7rem;
+        }
+
+    .pageDiv:last-of-type {
+        page-break-after: auto;
+    }
+</style>
+<div>
+    <div class="container border-0">
+        <!--案場排出表-->
+        <div>
+            @{
+                foreach (var row in Model.sbPrintList)
+                {
+                    <div class="row col-12">
+                        <div>
+                            <div style="height:2em;"></div>
+                            <span>[案場排出表]</span><br />
+                            <span>案場排出登記申請編號：@Html.Raw(row.Bookingno)</span><br />
+                            <div style="display: inline;">
+                                <span>設備登記編號：@Html.Raw(row.Pvno)</span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-12 justify-content-center">
+                        <table class="table text-center top">
+                            @*<caption>補貼所需資訊</caption>*@
+                            <thead class="table-bordered">
+                                <tr>
+                                    <th style="width:10%">單位類別</th>
+                                    <th style="width:22%" colspan="2">案場</th>
+                                    <th style="width:22%" colspan="2">清除機構</th>
+                                    <th style="width:22%" colspan="2">處理廠/境外處理輸出單位/貯存場</th>
+                                    <th style="width:22%" colspan="2">稽核單位</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-bordered">
+                                <tr>
+                                    <th scope="row">機構名稱</th>
+                                    <td colspan="2">@Html.Raw(row.CompanyName)</td>
+                                    <td colspan="2">@Html.Raw(row.Cle_Name)</td>
+                                    <td colspan="2">@Html.Raw(row.Tre_Name)</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">填報時間</th>
+                                    <td colspan="2">@Html.Raw(row.sAppdate)</td>
+                                    <td colspan="2">　 年　 月　 日　 時　 分</td>
+                                    <td colspan="2">　 年　 月　 日　 時　 分</td>
+                                    <td colspan="2">　 年　 月　 日　 時　 分</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" rowspan="8" class="align-middle">片數</th>
+                                    <td colspan="2">有鋁框</td>
+                                    <td colspan="2">有鋁框</td>
+                                    <td colspan="2">有鋁框</td>
+                                    <td colspan="2">有鋁框</td>
+                                </tr>
+                                <tr>
+                                    <td>有序號</td>
+                                    <td>無序號</td>
+                                    <td rowspan="3" colspan="2" class="align-middle text-gray-400">(請填寫數量)</td>
+                                    <td rowspan="3" colspan="2" class="align-middle text-gray-400">(請填寫數量)</td>
+                                    <td>有序號</td>
+                                    <td>無序號</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="2" class="align-middle">@Html.Raw(row.Alframe1_hasno1)</td>
+                                    <td rowspan="2" class="align-middle">@Html.Raw(row.Alframe1_hasno0)</td>
+                                    <td class="align-middle text-gray-400">(請填寫數量)</td>
+                                    <td class="align-middle text-gray-400">(請填寫數量)</td>
+                                </tr>
+                                <tr>
+                                    <td class="align-middle">序號不符</td>
+                                    <td class="align-middle text-gray-400">(請填寫數量)</td>
+                                </tr>
+
+                                <tr>
+                                    <td colspan="2">無鋁框</td>
+                                    <td colspan="2">無鋁框</td>
+                                    <td colspan="2">無鋁框</td>
+                                    <td colspan="2">無鋁框</td>
+                                </tr>
+                                <tr>
+                                    <td>有序號</td>
+                                    <td>無序號</td>
+                                    <td rowspan="3" colspan="2" class="align-middle text-gray-400">(請填寫數量)</td>
+                                    <td rowspan="3" colspan="2" class="align-middle text-gray-400">(請填寫數量)</td>
+                                    <td>有序號</td>
+                                    <td>無序號</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="2" class="align-middle">@Html.Raw(row.Alframe0_hasno1)</td>
+                                    <td rowspan="2" class="align-middle">@Html.Raw(row.Alframe0_hasno0)</td>
+                                    <td class="align-middle text-gray-400">(請填寫數量)</td>
+                                    <td class="align-middle text-gray-400">(請填寫數量)</td>
+                                </tr>
+                                <tr>
+                                    <td class="align-middle">序號不符</td>
+                                    <td class="align-middle text-gray-400">(請填寫數量)</td>
+                                </tr>
+                                @*<tr>
+                                    <td colspan="2" class="text-left" style="height:100px;">補充說明：</td>
+                                    <td colspan="2"></td>
+                                    <td colspan="2"></td>
+                                    <td colspan="2"></td>
+                                </tr>*@
+
+                                <tr>
+                                    <th scope="row" rowspan="4" class="align-middle">重量<br />(單位：公斤)</th>
+                                    <td rowspan="4" colspan="2" style="text-align:left" class="">
+                                        廢PV重：<br />
+                                        <br />
+                                        <br />
+                                        <br />
+                                        <div style="text-align:center">@Html.Raw(row.SPWeightSum)</div> 
+                                    </td>
+                                    <td>總　重</td>
+                                    <td>空車重</td>
+                                    <td>總　重</td>
+                                    <td>空車重</td>
+                                    <td rowspan="2" class="disabled">-----</td>
+                                    <td rowspan="2" class="disabled">-----</td>
+                                </tr>
+                                <tr>
+                                    <td style="height:50px;"></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="2" colspan="2" class="disabled">-----</td>
+                                    <td colspan="2" rowspan="2" class="disabled">-----</td>
+                                    <td colspan="2" class="text-left">允收廢PV重(註2)：</td>
+                                </tr>
+                                <tr>
+                                    @*<td colspan="2" class="text-left">包材重：</td>*@
+                                    <td colspan="2" class="text-left">包材重：</td>
+                                </tr>
+                                <tr style="height:180px;">
+                                    <th scope="row" class="align-middle">簽名欄</th>
+                                    <td colspan="2"><br /></td>
+                                    <td colspan="2"></td>
+                                    <td colspan="2"></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row col-12">
+                        <div>
+                            註1：以案場為單位（一式四份）：案場、清除機構、處理廠/境外處理輸出單位/貯存場<br />
+                            註2：「允收廢PV重」為符合允收標準之廢PV總重
+                        </div>
+                    </div>
+                    <div style="page-break-after:always"></div>
+                }
+            }
+        </div>
+        <br />
+        <br />
+        <div>
+            <div>
+                <h5>清運車輛明細</h5>
+                <table class="table text-center">                        
+                    <tbody class="table-bordered">
+                        <tr>
+                            <th rowspan="3">行程次數</th>
+                            <th colspan="6">清除機構</th>
+                            <th colspan="5">處理廠</th>
+                        </tr>
+                        <tr>
+                            @*<td rowspan="2"></td>*@
+                            <td rowspan="2">車號</td>
+                            <td rowspan="2">填報時間</td>
+                            <td rowspan="2">空車重</td>
+                            <td rowspan="2">總重</td>
+                            <td colspan="2">片數</td>
+                            <td rowspan="2">填報時間</td>
+                            <td rowspan="2">空車重</td>
+                            <td rowspan="2">總重</td>
+                            <td colspan="2">片數</td>
+                        </tr>
+                        <tr>
+                            <td>有鋁框</td>
+                            <td>無鋁框</td>
+                            <td>有鋁框</td>
+                            <td>無鋁框</td>
+
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                   
+                </table>
+            </div>
+        </div>
+
+
+        <!--序號清單表-->
+        <div id="01_1_body">
+            @{
+                foreach (var sb in Model.dicSB)
+                {
+                    string[] sdata = sb.Key.Split(",");
+                    string sbno = sdata[0]; //bookingno
+                    string Al_frame_type = sdata[1]; //有無鋁框(1或0)
+                    string nodata_txt = "無符合資料";
+
+                    int loop_times = (int)Math.Ceiling((double)sb.Value / 50);
+
+                    //無資料時印空白表單
+                    if (loop_times == 0) { loop_times = 1; }
+                    else { nodata_txt = ""; }
+
+                    for (int j = 0; j < loop_times; j++)
+                    {
+                        <div class="row col-12">
+                            <div>
+                                <div style="display: inline;">
+                                    <div style="height:2em;"></div>
+                                    <span>[序號清單表]</span><br />
+                                    <span style="display: inline;">
+                                        <span style="padding-right: 15rem;">主表單：01案場排出表</span>
+                                        <span>案場排出申請編號：@Html.Raw(sbno)</span>
+                                    </span>
+                                </div>
+                                <div>
+                                    @{
+                                        if (Al_frame_type == "1")
+                                        {
+                                            @Html.Raw("有序號、有鋁框");
+                                        }
+                                        else
+                                        {
+                                            @Html.Raw("有序號、無鋁框");
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row col-12 justify-content-center">
+                            <table class="table text-center">
+                                <tbody class="table-bordered" id="t01_1_table">
+                                    <tr>
+                                        <th>項次</th>
+                                        <th style="width:20%">設備序號</th>
+                                        <th>現場稽核狀態</th>
+                                        <th>項次</th>
+                                        <th style="width:20%">設備序號</th>
+                                        <th>現場稽核狀態</th>
+                                    </tr>
+                                    @{
+                                        for (int i = 1; i <= 25; i++)
+                                        {
+                                            string sp_sno = string.Empty;
+                                            string spkey = sbno + "_" + Al_frame_type + "-" + (i + j * 50);
+                                            string spkey2 = sbno + "_" + Al_frame_type + "-" + (i + 25 + j * 50);
+
+                                            <tr style="height:20px;">
+                                                <td class="align-middle">
+                                                    @Html.Raw(i)
+                                                </td>
+                                                <td class="align-middle">
+                                                    @if (i == 1)@Html.Raw(nodata_txt)
+                                                    @if (Model.dicSP.TryGetValue(spkey, out sp_sno))
+                                                    {
+                                                        @Html.Raw(sp_sno);
+                                                    }
+                                                </td>
+                                                <td class="text-left">□比對完成 □無法辨識<br />□查無序號 □其他</td>
+                                                <td class="align-middle">@Html.Raw(i + 25)</td>
+                                                <td class="align-middle">
+                                                    @if (Model.dicSP.TryGetValue(spkey2, out sp_sno))
+                                                    {
+                                                        @Html.Raw(sp_sno);
+                                                    }
+                                                </td>
+                                                <td class="text-left">□比對完成 □無法辨識<br />□查無序號 □其他</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+
+                            <div class="row col-12">
+                                <div class="row col-7" style="padding-left: 0;">
+                                    <table class="table text-center table-bordered">
+                                        <tbody id="t01_desc">
+                                            <tr>
+                                                <td colspan="2">其他原因說明欄位</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:15%">項次</td>
+                                                <td style="width:35%">說明</td>
+                                            </tr>
+                                            @{
+                                                for (int i = 0; i < 8; i++)
+                                                {
+                                                    <tr>
+                                                        <td style="padding-top:.5rem;">&nbsp;</td>
+                                                        <td></td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="row col-5">
+                                    <table id="table-sign">
+                                        <tr><td style="padding-bottom: 5rem;"></td></tr>
+                                        <tr><td style="border-top:double; padding-top: .7rem;">稽核單位：</td></tr>
+                                        <tr><td>填表人：</td></tr>
+                                        <tr><td>修正說明：</td></tr>
+                                        <tr><td>填表人簽名：</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    <div style="page-break-after:always"></div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
